@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+
+<meta charset="UTF-8">
+
+<meta name="viewport"
+      content="width=device-width, initial-scale=1">
+
+<title>Controle de Estoque</title>
+
+<script src="https://unpkg.com/html5-qrcode"
+        type="text/javascript">
+</script>
+
+<style>
+
+body {
+    margin: 0;
+    padding: 20px;
+    font-family: Arial, sans-serif;
+    background: #f2f2f2;
+}
+
+.container {
+    max-width: 500px;
+    margin: auto;
+}
+
+.card {
+    background: white;
+    padding: 20px;
+    border-radius: 15px;
+    box-shadow: 0 3px 10px rgba(0,0,0,.15);
+}
+
+h1 {
+    text-align: center;
+}
+
+button {
+    width: 100%;
+    padding: 15px;
+    margin-top: 10px;
+    border: 0;
+    border-radius: 10px;
+    background: #1976d2;
+    color: white;
+    font-size: 17px;
+    font-weight: bold;
+}
+
+#reader {
+    margin-top: 20px;
+}
+
+#resultado {
+    margin-top: 20px;
+    padding: 15px;
+    background: #eee;
+    border-radius: 10px;
+    font-size: 18px;
+}
+
+</style>
+
+</head>
+
+<body>
+
+<div class="container">
+
+<div class="card">
+
+<h1>📦 Controle de Estoque</h1>
+
+<button onclick="iniciarCamera()">
+📷 LER QR CODE
+</button>
+
+<div id="reader"></div>
+
+<div id="resultado">
+Aguardando leitura...
+</div>
+
+</div>
+
+</div>
+
+
+<script>
+
+let scanner = null;
+
+
+function iniciarCamera() {
+
+    document.getElementById("resultado").innerText =
+        "Solicitando acesso à câmera...";
+
+
+    scanner = new Html5Qrcode("reader");
+
+
+    scanner.start(
+
+        {
+            facingMode: "environment"
+        },
+
+        {
+            fps: 10,
+            qrbox: {
+                width: 250,
+                height: 250
+            }
+        },
+
+        function(decodedText) {
+
+            document.getElementById("resultado").innerText =
+                "QR CODE LIDO!\n\nSKU: " + decodedText;
+
+
+            scanner.stop();
+
+        },
+
+        function(errorMessage) {
+
+            // Erros normais de leitura são ignorados
+
+        }
+
+    )
+
+    .catch(function(error) {
+
+        document.getElementById("resultado").innerText =
+            "Não foi possível acessar a câmera.\n\n" +
+            error;
+
+    });
+
+}
+
+</script>
+
+</body>
+
+</html>
