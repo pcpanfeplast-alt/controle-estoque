@@ -1,1332 +1,1079 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
-
 <head>
-
-<meta charset="UTF-8">
-
-<meta name="viewport"
-      content="width=device-width, initial-scale=1.0">
-
-<title>Controle de Estoque ES</title>
-
-<script
-src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js">
-</script>
-
-<style>
-
-* {
-  box-sizing: border-box;
-}
-
-body {
-
-  margin: 0;
-  padding: 15px;
-
-  font-family: Arial, sans-serif;
-
-  background: #f2f2f2;
-
-}
-
-.container {
-
-  width: 100%;
-  max-width: 500px;
-
-  margin: auto;
-
-}
-
-h1 {
-
-  text-align: center;
-
-  font-size: 24px;
-
-  margin-bottom: 20px;
-
-}
-
-.card {
-
-  background: white;
-
-  padding: 20px;
-
-  border-radius: 12px;
-
-  box-shadow:
-    0 2px 8px rgba(0,0,0,0.15);
-
-  margin-bottom: 15px;
-
-}
-
-label {
-
-  display: block;
-
-  font-weight: bold;
-
-  margin-top: 12px;
-
-  margin-bottom: 5px;
-
-}
-
-input,
-select {
-
-  width: 100%;
-
-  padding: 13px;
-
-  border: 1px solid #ccc;
-
-  border-radius: 8px;
-
-  font-size: 16px;
-
-}
-
-button {
-
-  width: 100%;
-
-  padding: 14px;
-
-  border: none;
-
-  border-radius: 8px;
-
-  font-size: 16px;
-
-  font-weight: bold;
-
-  margin-top: 10px;
-
-  cursor: pointer;
-
-}
-
-.btn-camera {
-
-  background: #333;
-
-  color: white;
-
-}
-
-.btn-fechar {
-
-  background: #777;
-
-  color: white;
-
-  display: none;
-
-}
-
-.btn-consultar {
-
-  background: #555;
-
-  color: white;
-
-}
-
-.btn-registrar {
-
-  background: #1976d2;
-
-  color: white;
-
-  font-size: 18px;
-
-}
-
-.produto {
-
-  background: #f5f5f5;
-
-  padding: 15px;
-
-  border-radius: 8px;
-
-  margin-top: 12px;
-
-}
-
-.estoque {
-
-  font-size: 28px;
-
-  font-weight: bold;
-
-  text-align: center;
-
-  margin: 15px 0;
-
-}
-
-#reader {
-
-  width: 100%;
-
-  margin-top: 15px;
-
-  overflow: hidden;
-
-  border-radius: 8px;
-
-}
-
-.status-camera {
-
-  text-align: center;
-
-  font-size: 14px;
-
-  margin-top: 10px;
-
-  color: #555;
-
-}
-
-.mensagem {
-
-  padding: 12px;
-
-  border-radius: 8px;
-
-  margin-top: 15px;
-
-  white-space: pre-line;
-
-  background: #eef3f8;
-
-  display: none;
-
-}
-
-.sucesso {
-
-  background: #d9f2df;
-
-  color: #155724;
-
-}
-
-.erro {
-
-  background: #f8d7da;
-
-  color: #721c24;
-
-}
-
-</style>
-
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0b4f7c">
+  <meta name="description" content="Controle de Estoque ES - Anfeplast">
+  <title>Controle de Estoque ES | Anfeplast</title>
+  <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+
+  <style>
+    :root {
+      --navy: #0b3f63;
+      --blue: #0b6ea8;
+      --blue-2: #0d8bd1;
+      --blue-soft: #eaf5fc;
+      --border: #d7e2eb;
+      --text: #153047;
+      --muted: #64778a;
+      --green: #079455;
+      --green-dark: #067744;
+      --red: #c63d46;
+      --bg: #eef3f7;
+      --white: #ffffff;
+      --shadow: 0 8px 28px rgba(15, 52, 78, .10);
+    }
+
+    * { box-sizing: border-box; }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      margin: 0;
+      padding: 0;
+      background:
+        radial-gradient(circle at 15% 0%, rgba(13,139,209,.10), transparent 28%),
+        linear-gradient(180deg, #f7fafc 0%, var(--bg) 100%);
+      color: var(--text);
+      font-family: Arial, Helvetica, sans-serif;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    button, input, select { font: inherit; }
+
+    .app {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .topbar {
+      background: rgba(255,255,255,.98);
+      border-bottom: 1px solid #dce6ee;
+      box-shadow: 0 2px 12px rgba(12,48,70,.06);
+      position: sticky;
+      top: 0;
+      z-index: 20;
+    }
+
+    .topbar-inner {
+      max-width: 1100px;
+      margin: 0 auto;
+      min-height: 94px;
+      padding: 14px 22px;
+      display: flex;
+      align-items: center;
+      gap: 20px;
+    }
+
+    .brand-logo {
+      width: 255px;
+      max-width: 48vw;
+      height: auto;
+      display: block;
+    }
+
+    .brand-divider {
+      width: 1px;
+      height: 54px;
+      background: #d9e3eb;
+    }
+
+    .brand-title {
+      min-width: 0;
+    }
+
+    .brand-title strong {
+      display: block;
+      color: var(--navy);
+      font-size: 23px;
+      letter-spacing: .4px;
+      line-height: 1.15;
+    }
+
+    .brand-title span {
+      display: block;
+      color: var(--muted);
+      margin-top: 5px;
+      font-size: 13px;
+    }
+
+    .main {
+      width: min(1100px, calc(100% - 28px));
+      margin: 24px auto 34px;
+      flex: 1;
+    }
+
+    .hero {
+      background: linear-gradient(135deg, var(--navy), var(--blue));
+      color: #fff;
+      border-radius: 16px;
+      padding: 20px 24px;
+      box-shadow: var(--shadow);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 18px;
+      margin-bottom: 18px;
+    }
+
+    .hero-left {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .hero-icon {
+      font-size: 31px;
+      line-height: 1;
+    }
+
+    .hero h1 {
+      margin: 0;
+      font-size: 25px;
+      letter-spacing: .2px;
+    }
+
+    .hero p {
+      margin: 4px 0 0;
+      opacity: .88;
+      font-size: 14px;
+    }
+
+    .system-pill {
+      border: 1px solid rgba(255,255,255,.28);
+      background: rgba(255,255,255,.10);
+      border-radius: 999px;
+      padding: 8px 12px;
+      font-size: 12px;
+      white-space: nowrap;
+    }
+
+    .card {
+      background: var(--white);
+      border: 1px solid #e0e8ef;
+      border-radius: 16px;
+      box-shadow: var(--shadow);
+      overflow: hidden;
+      margin-bottom: 18px;
+    }
+
+    .section-head {
+      background: linear-gradient(90deg, #0b5e91, #0b79b7);
+      color: #fff;
+      min-height: 64px;
+      padding: 14px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 15px;
+    }
+
+    .section-head-main {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      min-width: 0;
+    }
+
+    .section-icon {
+      font-size: 24px;
+      width: 32px;
+      text-align: center;
+    }
+
+    .section-head strong {
+      font-size: 20px;
+      letter-spacing: .2px;
+    }
+
+    .section-head span {
+      font-size: 13px;
+      opacity: .88;
+      text-align: right;
+    }
+
+    .card-body {
+      padding: 20px;
+    }
+
+    .camera-grid {
+      display: grid;
+      grid-template-columns: 1.15fr .85fr;
+      gap: 16px;
+      align-items: stretch;
+    }
+
+    .camera-actions {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      gap: 10px;
+    }
+
+    .camera-status-box {
+      min-height: 126px;
+      background: linear-gradient(135deg, #e8f4fd, #f4f9fc);
+      border: 1px solid #d5e8f5;
+      border-radius: 13px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+      padding: 18px;
+      color: var(--navy);
+    }
+
+    .camera-status-box .big {
+      font-size: 34px;
+      margin-bottom: 8px;
+    }
+
+    .camera-status-box strong { font-size: 15px; }
+    .camera-status-box small { color: var(--muted); margin-top: 4px; }
+
+    #reader {
+      width: 100%;
+      max-width: 560px;
+      margin: 16px auto 0;
+      overflow: hidden;
+      border-radius: 13px;
+    }
+
+    .status-camera {
+      text-align: center;
+      color: var(--muted);
+      font-size: 13px;
+      min-height: 18px;
+      margin-top: 9px;
+    }
+
+    .btn {
+      width: 100%;
+      border: 0;
+      border-radius: 11px;
+      min-height: 52px;
+      padding: 13px 16px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: transform .12s ease, filter .12s ease, box-shadow .12s ease;
+    }
+
+    .btn:active {
+      transform: translateY(1px);
+    }
+
+    .btn-primary {
+      color: #fff;
+      background: linear-gradient(135deg, #0b4f7c, #0b79bd);
+      box-shadow: 0 5px 14px rgba(11,95,145,.20);
+    }
+
+    .btn-secondary {
+      color: #29465e;
+      background: #edf2f6;
+    }
+
+    .btn-register {
+      color: #fff;
+      background: linear-gradient(135deg, var(--green-dark), var(--green));
+      box-shadow: 0 5px 14px rgba(7,148,85,.20);
+      min-height: 56px;
+      font-size: 17px;
+    }
+
+    .field-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+
+    .field.full { grid-column: 1 / -1; }
+
+    label {
+      display: block;
+      font-size: 14px;
+      font-weight: 700;
+      margin: 0 0 7px;
+      color: #1b3850;
+    }
+
+    input, select {
+      width: 100%;
+      min-height: 52px;
+      padding: 13px 14px;
+      border: 1px solid var(--border);
+      border-radius: 11px;
+      background: #fff;
+      color: var(--text);
+      outline: none;
+      font-size: 16px;
+      transition: border-color .15s ease, box-shadow .15s ease;
+    }
+
+    input:focus, select:focus {
+      border-color: var(--blue-2);
+      box-shadow: 0 0 0 3px rgba(13,139,209,.11);
+    }
+
+    .sku-row {
+      display: grid;
+      grid-template-columns: 1fr 260px;
+      gap: 12px;
+      align-items: end;
+    }
+
+    .product-box {
+      margin-top: 16px;
+      background: linear-gradient(135deg, #f4f8fb, #eef4f8);
+      border: 1px solid #dfe9f0;
+      border-radius: 13px;
+      padding: 17px;
+      line-height: 1.55;
+      min-height: 82px;
+    }
+
+    .product-box strong { color: var(--navy); }
+
+    .stock-box {
+      margin-top: 14px;
+      border-radius: 13px;
+      background: linear-gradient(135deg, #e9f8f1, #dcf3e9);
+      border: 1px solid #cdebdc;
+      min-height: 108px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 14px;
+      color: var(--green-dark);
+      text-align: center;
+    }
+
+    .stock-label {
+      font-size: 15px;
+      font-weight: 700;
+    }
+
+    .stock-number {
+      display: block;
+      font-size: 42px;
+      line-height: 1;
+      margin-top: 3px;
+    }
+
+    .stock-icon { font-size: 34px; }
+
+    .form-actions {
+      margin-top: 17px;
+    }
+
+    .mensagem {
+      padding: 13px 15px;
+      border-radius: 11px;
+      margin-top: 14px;
+      display: none;
+      white-space: pre-line;
+      background: var(--blue-soft);
+      border: 1px solid #d7eaf7;
+      color: var(--navy);
+      font-size: 14px;
+      line-height: 1.45;
+    }
+
+    .mensagem[data-erro="true"] {
+      background: #fff0f1;
+      border-color: #f2c8cc;
+      color: #9f2630;
+    }
+
+    .info-strip {
+      margin-top: 14px;
+      padding: 14px 16px;
+      border-radius: 11px;
+      background: #eef7ff;
+      border: 1px solid #d8ebfa;
+      color: #285677;
+      font-size: 13px;
+    }
+
+    .footer {
+      background: linear-gradient(135deg, #0b3f63, #0a527e);
+      color: #fff;
+      margin-top: auto;
+    }
+
+    .footer-inner {
+      max-width: 1100px;
+      margin: 0 auto;
+      min-height: 88px;
+      padding: 18px 22px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
+    }
+
+    .footer-brand {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+    }
+
+    .footer-logo {
+      width: 170px;
+      filter: brightness(0) invert(1);
+    }
+
+    .footer-divider {
+      width: 1px;
+      height: 42px;
+      background: rgba(255,255,255,.28);
+    }
+
+    .footer-copy {
+      font-size: 13px;
+      opacity: .88;
+    }
+
+    .footer-version {
+      text-align: right;
+      font-size: 12px;
+      opacity: .82;
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    @media (max-width: 760px) {
+      .topbar-inner {
+        min-height: 78px;
+        padding: 11px 14px;
+        gap: 12px;
+      }
+
+      .brand-logo {
+        width: 190px;
+        max-width: 57vw;
+      }
+
+      .brand-divider { height: 40px; }
+
+      .brand-title strong { font-size: 15px; }
+      .brand-title span { display: none; }
+
+      .main {
+        width: min(100% - 16px, 680px);
+        margin: 12px auto 22px;
+      }
+
+      .hero {
+        padding: 16px;
+        border-radius: 13px;
+      }
+
+      .hero h1 { font-size: 20px; }
+      .hero p { font-size: 12px; }
+      .system-pill { display: none; }
+
+      .section-head {
+        min-height: 57px;
+        padding: 12px 15px;
+      }
+
+      .section-head strong { font-size: 16px; }
+      .section-head span { display: none; }
+
+      .card-body { padding: 15px; }
+
+      .camera-grid,
+      .field-grid,
+      .sku-row {
+        grid-template-columns: 1fr;
+      }
+
+      .field.full { grid-column: auto; }
+
+      .stock-box { min-height: 100px; }
+
+      .stock-number { font-size: 38px; }
+
+      .footer-inner {
+        padding: 17px 15px;
+        align-items: flex-start;
+      }
+
+      .footer-copy { display: none; }
+
+      .footer-logo { width: 145px; }
+
+      .footer-divider { display: none; }
+    }
+  </style>
 </head>
 
-
 <body>
+<div class="app">
 
-<div class="container">
+  <header class="topbar">
+    <div class="topbar-inner">
+      <img class="brand-logo" src="data:image/png;base64,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" alt="Anfeplast - tampas plásticas">
+      <div class="brand-divider"></div>
+      <div class="brand-title">
+        <strong>CONTROLE DE ESTOQUE</strong>
+        <span>Gestão de estoque em tempo real</span>
+      </div>
+    </div>
+  </header>
 
-<h1>📦 CONTROLE DE ESTOQUE</h1>
+  <main class="main">
 
+    <section class="hero">
+      <div class="hero-left">
+        <div class="hero-icon">📦</div>
+        <div>
+          <h1>Controle de Estoque ES</h1>
+          <p>Consulta, leitura de QR Code e movimentação de produtos.</p>
+        </div>
+      </div>
+      <div class="system-pill">ANFEPLAST • SISTEMA INTERNO</div>
+    </section>
 
-<div class="card">
+    <section class="card">
+      <div class="section-head">
+        <div class="section-head-main">
+          <div class="section-icon">▣</div>
+          <strong>LEITURA DE QR CODE</strong>
+        </div>
+        <span>Aponte a câmera para o QR Code do produto</span>
+      </div>
 
-<button
-class="btn-camera"
-type="button"
-onclick="abrirCamera()">
+      <div class="card-body">
+        <div class="camera-grid">
+          <div class="camera-actions">
+            <button class="btn btn-primary" type="button" onclick="abrirCamera()">📷 &nbsp; LER QR CODE</button>
+            <button id="btnFecharCamera" class="btn btn-secondary" type="button" onclick="fecharCamera()">✖ &nbsp; FECHAR CÂMERA</button>
+            <div id="statusCamera" class="status-camera"></div>
+          </div>
 
-📷 LER QR CODE
+          <div class="camera-status-box">
+            <div class="big">⌗</div>
+            <strong>Leitor pronto</strong>
+            <small>Use a câmera traseira para ler o código.</small>
+          </div>
+        </div>
 
-</button>
+        <div id="reader"></div>
+      </div>
+    </section>
 
+    <section class="card">
+      <div class="section-head">
+        <div class="section-head-main">
+          <div class="section-icon">▤</div>
+          <strong>CONSULTA DE PRODUTO</strong>
+        </div>
+        <span>Digite o SKU ou leia o QR Code</span>
+      </div>
 
-<button
-id="btnFecharCamera"
-class="btn-fechar"
-type="button"
-onclick="fecharCamera()">
+      <div class="card-body">
+        <div class="sku-row">
+          <div>
+            <label for="sku">SKU</label>
+            <input type="text" id="sku" placeholder="Digite ou leia o QR Code" onchange="buscarProduto()">
+          </div>
+          <button class="btn btn-primary" type="button" onclick="buscarProduto()">🔎 &nbsp; CONSULTAR PRODUTO</button>
+        </div>
 
-✖ FECHAR CÂMERA
+        <div id="produto" class="product-box">Produto não selecionado</div>
 
-</button>
+        <div id="estoque" class="stock-box">
+          <div class="stock-icon">▤</div>
+          <div>
+            <div class="stock-label">ESTOQUE ATUAL</div>
+            <strong class="stock-number">-</strong>
+          </div>
+        </div>
+      </div>
+    </section>
 
+    <section class="card">
+      <div class="section-head">
+        <div class="section-head-main">
+          <div class="section-icon">⇄</div>
+          <strong>REGISTRAR MOVIMENTAÇÃO</strong>
+        </div>
+        <span>Controle a entrada e saída de produtos</span>
+      </div>
 
-<div
-id="statusCamera"
-class="status-camera">
-</div>
+      <div class="card-body">
+        <div class="field-grid">
+          <div class="field">
+            <label for="tipo">Tipo de movimentação</label>
+            <select id="tipo">
+              <option value="">Selecione</option>
+              <option value="Entrada">📥 ENTRADA</option>
+              <option value="Saída">📤 SAÍDA</option>
+            </select>
+          </div>
 
+          <div class="field">
+            <label for="quantidade">Quantidade</label>
+            <input type="number" id="quantidade" min="1" step="1" placeholder="Digite a quantidade">
+          </div>
 
-<div id="reader"></div>
+          <div class="field">
+            <label for="operador">Operador</label>
+            <input type="text" id="operador" placeholder="Nome do operador">
+          </div>
 
+          <div class="field">
+            <label for="observacao">Observação</label>
+            <input type="text" id="observacao" placeholder="Opcional">
+          </div>
+        </div>
 
-<label>SKU</label>
+        <div class="form-actions">
+          <button class="btn btn-register" type="button" onclick="registrar()">✓ &nbsp; REGISTRAR MOVIMENTAÇÃO</button>
+        </div>
 
-<input
-type="text"
-id="sku"
-placeholder="Digite ou leia o QR Code">
+        <div id="mensagem" class="mensagem"></div>
 
+        <div class="info-strip">
+          ℹ️ &nbsp; As movimentações são registradas no Google Sheets e o estoque é recalculado automaticamente.
+        </div>
+      </div>
+    </section>
 
-<button
-class="btn-consultar"
-type="button"
-onclick="buscarProduto()">
+  </main>
 
-🔎 CONSULTAR PRODUTO
-
-</button>
-
-
-<div
-id="produto"
-class="produto">
-
-Produto não selecionado
-
-</div>
-
-
-<div
-id="estoque"
-class="estoque">
-
-Estoque: -
-
-</div>
-
-</div>
-
-
-<div class="card">
-
-<label>Tipo de movimentação</label>
-
-<select id="tipo">
-
-<option value="">
-Selecione
-</option>
-
-<option value="Entrada">
-📥 ENTRADA
-</option>
-
-<option value="Saída">
-📤 SAÍDA
-</option>
-
-</select>
-
-
-<label>Quantidade</label>
-
-<input
-type="number"
-id="quantidade"
-min="1"
-step="1"
-placeholder="Digite a quantidade">
-
-
-<label>Operador</label>
-
-<input
-type="text"
-id="operador"
-placeholder="Nome do operador">
-
-
-<label>Observação</label>
-
-<input
-type="text"
-id="observacao"
-placeholder="Opcional">
-
-
-<button
-class="btn-registrar"
-type="button"
-onclick="registrar()">
-
-✅ REGISTRAR MOVIMENTAÇÃO
-
-</button>
-
-
-<div
-id="mensagem"
-class="mensagem">
-</div>
-
-</div>
-
-
-<div
-style="
-text-align:center;
-font-size:12px;
-color:#777;
-margin-top:10px;
-">
-
-Controle de Estoque ES
+  <footer class="footer">
+    <div class="footer-inner">
+      <div class="footer-brand">
+        <img class="footer-logo" src="data:image/png;base64,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" alt="Anfeplast">
+        <div class="footer-divider"></div>
+        <div class="footer-copy">Qualidade em tampas, confiança em cada detalhe.</div>
+      </div>
+      <div class="footer-version">
+        Controle de Estoque ES<br>
+        Versão 2.3
+      </div>
+    </div>
+  </footer>
 
 </div>
-
-</div>
-
 
 <script>
+  const API_URL = "https://script.google.com/macros/s/AKfycbyr8totSfl37plsMrhtx6ubUVL3DzBM5hMovFWfoUhZAeNuaItDLoSWNqnUCAYYK5TSA0w/exec";
 
-/* ============================================================
-   CONFIGURAÇÃO
-============================================================ */
+  let produtoAtual = null;
+  let scannerQR = null;
+  let processandoQR = false;
 
-const API_URL =
-'https://script.google.com/macros/s/AKfycbyr8totSfl37plsMrhtx6ubUVL3DzBM5hMovFWfoUhZAeNuaItDLoSWNqnUCAYYK5TSAw/exec';
+  /**
+   * Comunicação externa com o Apps Script via JSONP.
+   * Esta função substitui google.script.run porque o frontend está hospedado no GitHub Pages.
+   */
+  function chamarAPI(acao, parametros = {}) {
+    return new Promise(function(resolve, reject) {
+      const callbackName =
+        "callback_" + Date.now() + "_" + Math.floor(Math.random() * 100000);
 
+      const script = document.createElement("script");
+      const query = new URLSearchParams();
 
-let produtoAtual = null;
+      query.append("action", acao);
+      query.append("callback", callbackName);
 
-let scannerQR = null;
+      Object.keys(parametros).forEach(function(chave) {
+        const valor = parametros[chave];
+        query.append(chave, valor == null ? "" : String(valor));
+      });
 
-let processandoQR = false;
+      let finalizado = false;
 
-
-/* ============================================================
-   JSONP
-============================================================ */
-
-function chamarAPI(acao, parametros = {}) {
-
-  return new Promise(function(resolve, reject) {
-
-    const callbackName =
-      'callback_' +
-      Date.now() +
-      '_' +
-      Math.floor(Math.random() * 100000);
-
-
-    const script =
-      document.createElement('script');
-
-
-    const query =
-      new URLSearchParams();
-
-
-    query.append('action', acao);
-
-    query.append('callback', callbackName);
-
-
-    Object.keys(parametros).forEach(function(chave) {
-
-      query.append(
-        chave,
-        parametros[chave] ?? ''
-      );
-
-    });
-
-
-    const timeout =
-      setTimeout(function() {
-
-        limpar();
-
-        reject(
-          new Error(
-            'Tempo limite excedido ao comunicar com o servidor.'
-          )
-        );
-
+      const timeout = setTimeout(function() {
+        finalizar();
+        reject(new Error("Tempo limite excedido ao comunicar com o servidor."));
       }, 15000);
 
-
-    window[callbackName] =
-      function(resultado) {
-
-        clearTimeout(timeout);
-
-        limpar();
-
+      window[callbackName] = function(resultado) {
+        finalizar();
         resolve(resultado);
-
       };
 
+      function finalizar() {
+        if (finalizado) return;
+        finalizado = true;
+        clearTimeout(timeout);
 
-    function limpar() {
+        try {
+          delete window[callbackName];
+        } catch (e) {
+          window[callbackName] = undefined;
+        }
 
-      try {
-
-        delete window[callbackName];
-
-      } catch(e) {}
-
-      if (script.parentNode) {
-
-        script.parentNode.removeChild(script);
-
+        if (script.parentNode) {
+          script.parentNode.removeChild(script);
+        }
       }
 
-    }
-
-
-    script.onerror =
-      function() {
-
-        clearTimeout(timeout);
-
-        limpar();
-
-        reject(
-          new Error(
-            'Não foi possível conectar ao Apps Script.'
-          )
-        );
-
+      script.onerror = function() {
+        finalizar();
+        reject(new Error("Não foi possível conectar ao Apps Script."));
       };
 
-
-    script.src =
-      API_URL +
-      '?' +
-      query.toString();
-
-
-    document.body.appendChild(script);
-
-  });
-
-}
-
-
-/* ============================================================
-   CÂMERA / QR CODE
-============================================================ */
+      script.src = API_URL + "?" + query.toString();
+      document.body.appendChild(script);
+    });
+  }
 
 async function abrirCamera() {
+    const reader = document.getElementById("reader");
+    const status = document.getElementById("statusCamera");
+    const btnFechar = document.getElementById("btnFecharCamera");
 
-  const reader =
-    document.getElementById('reader');
-
-  const status =
-    document.getElementById('statusCamera');
-
-  const btnFechar =
-    document.getElementById('btnFecharCamera');
-
-
-  if (!reader) {
-
-    alert(
-      'Área do leitor QR não encontrada.'
-    );
-
-    return;
-
-  }
-
-
-  if (
-    typeof Html5Qrcode ===
-    'undefined'
-  ) {
-
-    alert(
-      'Biblioteca do QR Code não carregada.'
-    );
-
-    return;
-
-  }
-
-
-  try {
-
-    await fecharCamera(false);
-
-
-    reader.innerHTML = '';
-
-    status.innerText =
-      'Solicitando acesso à câmera...';
-
-
-    if (
-      !navigator.mediaDevices ||
-      !navigator.mediaDevices.getUserMedia
-    ) {
-
-      throw new Error(
-        'Este navegador não permite acesso à câmera. Verifique se o site está sendo aberto por HTTPS.'
-      );
-
+    if (!reader) {
+      alert("Erro: área do leitor QR não encontrada.");
+      return;
     }
 
+    if (typeof Html5Qrcode === "undefined") {
+      alert("A biblioteca do leitor QR não foi carregada. Verifique sua conexão com a internet.");
+      return;
+    }
 
-    /* Solicita explicitamente a câmera */
+    try {
+      // Se já existe uma câmera aberta, fecha primeiro.
+      await fecharCamera(false);
 
-    const stream =
-      await navigator.mediaDevices.getUserMedia({
+      reader.innerHTML = "";
+      status.innerText = "Solicitando acesso à câmera...";
 
-        video: {
-
-          facingMode: {
-            ideal: 'environment'
-          }
-
-        },
-
-        audio: false
-
-      });
-
-
-    stream
-      .getTracks()
-      .forEach(function(track) {
-
-        track.stop();
-
-      });
-
-
-    status.innerText =
-      'Câmera ativa. Aponte para o QR Code.';
-
-
-    btnFechar.style.display =
-      'block';
-
-
-    scannerQR =
-      new Html5Qrcode('reader');
-
-
-    const config = {
-
-      fps: 10,
-
-      qrbox:
-        function(
-          viewfinderWidth,
-          viewfinderHeight
-        ) {
-
-          const tamanho =
-            Math.min(
-              viewfinderWidth * 0.75,
-              viewfinderHeight * 0.75,
-              300
-            );
-
-
-          return {
-
-            width:
-              Math.floor(tamanho),
-
-            height:
-              Math.floor(tamanho)
-
-          };
-
-        }
-
-    };
-
-
-    await scannerQR.start(
-
-      {
-        facingMode: {
-          exact: 'environment'
-        }
-      },
-
-      config,
-
-
-      async function(decodedText) {
-
-        if (processandoQR)
-          return;
-
-
-        processandoQR = true;
-
-
-        const sku =
-          String(decodedText).trim();
-
-
-        console.log(
-          'QR CODE LIDO:',
-          sku
+      // Solicita explicitamente a permissão.
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        throw new Error(
+          "Este navegador não disponibilizou acesso à câmera. Abra o aplicativo pelo endereço HTTPS do Web App."
         );
-
-
-        document.getElementById(
-          'sku'
-        ).value = sku;
-
-
-        status.innerText =
-          'QR Code lido com sucesso.';
-
-
-        await fecharCamera(false);
-
-
-        await buscarProduto();
-
-
-        setTimeout(function() {
-
-          processandoQR = false;
-
-        }, 1000);
-
-      },
-
-
-      function(errorMessage) {
-
-        /* Erros normais durante a leitura
-           são ignorados. */
-
       }
 
-    );
-
-
-  } catch(error) {
-
-    console.error(
-      'Erro câmera:',
-      error
-    );
-
-
-    await fecharCamera(false);
-
-
-    if (
-      error.name ===
-      'NotAllowedError'
-    ) {
-
-      alert(
-        'O acesso à câmera foi negado.\n\n' +
-        'Abra as configurações do navegador e permita o acesso à câmera para este site.'
-      );
-
-
-    } else if (
-      error.name ===
-      'NotFoundError'
-    ) {
-
-      alert(
-        'Nenhuma câmera foi encontrada.'
-      );
-
-
-    } else {
-
-      alert(
-        'Não foi possível iniciar a câmera.\n\n' +
-        error.message
-      );
-
-    }
-
-  }
-
-}
-
-
-/* ============================================================
-   FECHAR CÂMERA
-============================================================ */
-
-async function fecharCamera(
-  mostrarStatus = true
-) {
-
-  const reader =
-    document.getElementById(
-      'reader'
-    );
-
-
-  const status =
-    document.getElementById(
-      'statusCamera'
-    );
-
-
-  const btnFechar =
-    document.getElementById(
-      'btnFecharCamera'
-    );
-
-
-  if (scannerQR) {
-
-    try {
-
-      await scannerQR.stop();
-
-    } catch(e) {}
-
-
-    try {
-
-      scannerQR.clear();
-
-    } catch(e) {}
-
-
-    scannerQR = null;
-
-  }
-
-
-  if (reader) {
-
-    reader.innerHTML = '';
-
-  }
-
-
-  if (btnFechar) {
-
-    btnFechar.style.display =
-      'none';
-
-  }
-
-
-  if (
-    mostrarStatus &&
-    status
-  ) {
-
-    status.innerText = '';
-
-  }
-
-}
-
-
-/* ============================================================
-   BUSCAR PRODUTO
-============================================================ */
-
-async function buscarProduto() {
-
-  const campo =
-    document.getElementById(
-      'sku'
-    );
-
-
-  const sku =
-    campo.value.trim();
-
-
-  if (!sku) {
-
-    mostrarMensagem(
-      'Informe ou leia um SKU.',
-      true
-    );
-
-    return;
-
-  }
-
-
-  mostrarMensagem(
-    'Consultando produto...',
-    false
-  );
-
-
-  try {
-
-    const resultado =
-      await chamarAPI(
-        'buscarProduto',
-        {
-          sku: sku
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: {
+          facingMode: { ideal: "environment" }
+        },
+        audio: false
+      });
+
+      // A permissão foi concedida. O html5-qrcode assumirá a câmera.
+      stream.getTracks().forEach(function(track) {
+        track.stop();
+      });
+
+      status.innerText = "Câmera ativa — aponte para o QR Code.";
+      btnFechar.style.display = "block";
+
+      scannerQR = new Html5Qrcode("reader");
+
+      const config = {
+        fps: 10,
+        qrbox: function(viewfinderWidth, viewfinderHeight) {
+          const tamanho = Math.min(
+            viewfinderWidth * 0.75,
+            viewfinderHeight * 0.75,
+            300
+          );
+
+          return {
+            width: Math.floor(tamanho),
+            height: Math.floor(tamanho)
+          };
+        },
+        aspectRatio: 1.0
+      };
+
+      await scannerQR.start(
+        { facingMode: "environment" },
+        config,
+        async function(decodedText) {
+
+          if (processandoQR) return;
+          processandoQR = true;
+
+          console.log("QR CODE LIDO:", decodedText);
+
+          const campoSKU = document.getElementById("sku");
+
+          if (campoSKU) {
+            campoSKU.value = String(decodedText).trim();
+          }
+
+          status.innerText = "QR Code lido com sucesso.";
+
+          await fecharCamera(false);
+
+          buscarProduto();
+
+          setTimeout(function() {
+            processandoQR = false;
+          }, 1000);
+        },
+        function(errorMessage) {
+          // Erros normais durante a procura do QR são ignorados.
         }
       );
 
+    } catch (error) {
+      console.error("Erro ao iniciar câmera:", error);
 
-    if (
-      !resultado ||
-      !resultado.sucesso
-    ) {
+      await fecharCamera(false);
 
+      if (error && error.name === "NotAllowedError") {
+        status.innerText = "";
+        alert(
+          "O acesso à câmera foi negado.\n\n" +
+          "No celular, permita a câmera para este site nas configurações do navegador e tente novamente."
+        );
+
+      } else if (error && error.name === "NotFoundError") {
+        status.innerText = "";
+        alert("Nenhuma câmera foi encontrada neste dispositivo.");
+
+      } else if (error && error.name === "NotReadableError") {
+        status.innerText = "";
+        alert("A câmera está sendo usada por outro aplicativo.");
+
+      } else if (error && error.name === "SecurityError") {
+        status.innerText = "";
+        alert(
+          "O navegador bloqueou o acesso à câmera por segurança.\n\n" +
+          "Abra o aplicativo pelo endereço HTTPS do Web App."
+        );
+
+      } else {
+        status.innerText = "";
+        alert(
+          "Não foi possível iniciar a câmera.\n\n" +
+          (error && error.message ? error.message : error)
+        );
+      }
+    }
+  }
+
+async function fecharCamera(mostrarStatus = true) {
+    const reader = document.getElementById("reader");
+    const status = document.getElementById("statusCamera");
+    const btnFechar = document.getElementById("btnFecharCamera");
+
+    if (scannerQR) {
+      try {
+        await scannerQR.stop();
+      } catch (e) {}
+
+      try {
+        scannerQR.clear();
+      } catch (e) {}
+
+      scannerQR = null;
+    }
+
+    if (reader) {
+      reader.innerHTML = "";
+    }
+
+    if (btnFechar) {
+      btnFechar.style.display = "none";
+    }
+
+    if (mostrarStatus && status) {
+      status.innerText = "";
+    }
+  }
+
+  /**
+   * Busca produto usando a API JSONP.
+   */
+  async function buscarProduto() {
+    const campo = document.getElementById("sku");
+    const sku = campo ? campo.value.trim() : "";
+
+    if (!sku) {
+      mostrarMensagem("Informe ou leia um SKU.", true);
+      return;
+    }
+
+    mostrarMensagem("Consultando produto...", false);
+
+    try {
+      const resultado = await chamarAPI("buscarProduto", { sku: sku });
+
+      if (!resultado || !resultado.sucesso) {
+        produtoAtual = null;
+        document.getElementById("produto").innerText =
+          resultado ? resultado.mensagem : "Erro ao consultar produto.";
+        document.getElementById("estoque").innerHTML =
+          '<div class="stock-icon">▤</div><div><div class="stock-label">ESTOQUE ATUAL</div><strong class="stock-number">-</strong></div>';
+        mostrarMensagem(
+          resultado ? resultado.mensagem : "Erro ao consultar produto.",
+          true
+        );
+        return;
+      }
+
+      produtoAtual = resultado;
+
+      document.getElementById("produto").innerHTML =
+        "<strong>SKU:</strong> " +
+        escaparHTML(resultado.sku) +
+        "<br><br>" +
+        "<strong>Produto:</strong> " +
+        escaparHTML(resultado.produto);
+
+      await consultarEstoque(resultado.sku);
+      esconderMensagem();
+
+    } catch (erro) {
       produtoAtual = null;
-
-
-      document.getElementById(
-        'produto'
-      ).innerText =
-        resultado?.mensagem ||
-        'Produto não encontrado.';
-
-
-      document.getElementById(
-        'estoque'
-      ).innerText =
-        'Estoque: -';
-
+      document.getElementById("produto").innerText = "Erro na consulta.";
+      document.getElementById("estoque").innerHTML =
+        '<div class="stock-icon">▤</div><div><div class="stock-label">ESTOQUE ATUAL</div><strong class="stock-number">-</strong></div>';
 
       mostrarMensagem(
-        resultado?.mensagem ||
-        'Produto não encontrado.',
+        "Erro ao consultar o produto:\n" +
+        (erro && erro.message ? erro.message : erro),
         true
       );
+    }
+  }
 
+  /**
+   * Consulta estoque usando a API JSONP.
+   */
+  async function consultarEstoque(sku) {
+    try {
+      const resultado = await chamarAPI("consultarEstoque", { sku: sku });
 
+      if (!resultado || !resultado.sucesso) {
+        document.getElementById("estoque").innerHTML =
+          '<div class="stock-icon">▤</div><div><div class="stock-label">ESTOQUE ATUAL</div><strong class="stock-number">-</strong></div>';
+        return;
+      }
+
+      document.getElementById("estoque").innerHTML =
+        '<div class="stock-icon">▤</div><div><div class="stock-label">ESTOQUE ATUAL</div><strong class="stock-number">' +
+        Number(resultado.estoque).toLocaleString("pt-BR") +
+        "</strong></div>";
+
+    } catch (erro) {
+      document.getElementById("estoque").innerHTML =
+        '<div class="stock-icon">▤</div><div><div class="stock-label">ESTOQUE ATUAL</div><strong class="stock-number">Erro</strong></div>';
+      console.error(erro);
+    }
+  }
+
+  /**
+   * Registra movimentação usando a API JSONP.
+   */
+  async function registrar() {
+    if (!produtoAtual) {
+      mostrarMensagem("Primeiro leia ou informe um SKU válido.", true);
       return;
-
     }
 
+    const tipo = document.getElementById("tipo").value;
+    const quantidade = Number(document.getElementById("quantidade").value);
+    const operador = document.getElementById("operador").value.trim();
+    const observacao = document.getElementById("observacao").value.trim();
+    const dispositivo = navigator.userAgent;
 
-    produtoAtual =
-      resultado;
-
-
-    document.getElementById(
-      'produto'
-    ).innerHTML =
-
-      '<strong>SKU:</strong> ' +
-      escaparHTML(resultado.sku) +
-
-      '<br><br>' +
-
-      '<strong>Produto:</strong> ' +
-      escaparHTML(resultado.produto);
-
-
-    await consultarEstoque(
-      resultado.sku
-    );
-
-
-    esconderMensagem();
-
-
-  } catch(error) {
-
-    console.error(error);
-
-
-    produtoAtual = null;
-
-
-    mostrarMensagem(
-      'Erro ao consultar produto:\n' +
-      error.message,
-      true
-    );
-
-  }
-
-}
-
-
-/* ============================================================
-   CONSULTAR ESTOQUE
-============================================================ */
-
-async function consultarEstoque(
-  sku
-) {
-
-  try {
-
-    const resultado =
-      await chamarAPI(
-        'consultarEstoque',
-        {
-          sku: sku
-        }
-      );
-
-
-    if (
-      !resultado ||
-      !resultado.sucesso
-    ) {
-
-      document.getElementById(
-        'estoque'
-      ).innerText =
-        resultado?.mensagem ||
-        'Erro ao consultar estoque.';
-
-
+    if (!tipo) {
+      mostrarMensagem("Selecione ENTRADA ou SAÍDA.", true);
       return;
-
     }
 
-
-    document.getElementById(
-      'estoque'
-    ).innerText =
-
-      'Estoque: ' +
-
-      Number(
-        resultado.estoque
-      ).toLocaleString(
-        'pt-BR'
-      );
-
-
-  } catch(error) {
-
-    document.getElementById(
-      'estoque'
-    ).innerText =
-      'Erro ao consultar estoque.';
-
-
-    console.error(error);
-
-  }
-
-}
-
-
-/* ============================================================
-   REGISTRAR MOVIMENTAÇÃO
-============================================================ */
-
-async function registrar() {
-
-  if (!produtoAtual) {
-
-    mostrarMensagem(
-      'Primeiro leia ou informe um SKU válido.',
-      true
-    );
-
-    return;
-
-  }
-
-
-  const tipo =
-    document.getElementById(
-      'tipo'
-    ).value;
-
-
-  const quantidade =
-    Number(
-      document.getElementById(
-        'quantidade'
-      ).value
-    );
-
-
-  const operador =
-    document.getElementById(
-      'operador'
-    ).value.trim();
-
-
-  const observacao =
-    document.getElementById(
-      'observacao'
-    ).value.trim();
-
-
-  const dispositivo =
-    navigator.userAgent;
-
-
-  if (!tipo) {
-
-    mostrarMensagem(
-      'Selecione ENTRADA ou SAÍDA.',
-      true
-    );
-
-    return;
-
-  }
-
-
-  if (
-    !quantidade ||
-    quantidade <= 0
-  ) {
-
-    mostrarMensagem(
-      'Informe uma quantidade válida.',
-      true
-    );
-
-    return;
-
-  }
-
-
-  if (
-    !Number.isInteger(
-      quantidade
-    )
-  ) {
-
-    mostrarMensagem(
-      'A quantidade deve ser um número inteiro.',
-      true
-    );
-
-    return;
-
-  }
-
-
-  if (!operador) {
-
-    mostrarMensagem(
-      'Informe o operador.',
-      true
-    );
-
-    return;
-
-  }
-
-
-  mostrarMensagem(
-    'Registrando movimentação...',
-    false
-  );
-
-
-  try {
-
-    const resultado =
-      await chamarAPI(
-
-        'registrarMovimentacao',
-
-        {
-
-          sku:
-            produtoAtual.sku,
-
-          tipo:
-            tipo,
-
-          quantidade:
-            quantidade,
-
-          operador:
-            operador,
-
-          dispositivo:
-            dispositivo,
-
-          observacao:
-            observacao
-
-        }
-
-      );
-
-
-    if (
-      !resultado ||
-      !resultado.sucesso
-    ) {
+    if (!quantidade || quantidade <= 0) {
+      mostrarMensagem("Informe uma quantidade válida.", true);
+      return;
+    }
+
+    if (!Number.isInteger(quantidade)) {
+      mostrarMensagem("A quantidade deve ser um número inteiro.", true);
+      return;
+    }
+
+    if (!operador) {
+      mostrarMensagem("Informe o operador.", true);
+      return;
+    }
+
+    mostrarMensagem("Registrando movimentação...", false);
+
+    try {
+      const resultado = await chamarAPI("registrarMovimentacao", {
+        sku: produtoAtual.sku,
+        tipo: tipo,
+        quantidade: quantidade,
+        operador: operador,
+        dispositivo: dispositivo,
+        observacao: observacao
+      });
+
+      if (!resultado || !resultado.sucesso) {
+        mostrarMensagem(
+          resultado ? resultado.mensagem : "Erro ao registrar movimentação.",
+          true
+        );
+        return;
+      }
 
       mostrarMensagem(
-        resultado?.mensagem ||
-        'Erro ao registrar movimentação.',
-        true
+        "MOVIMENTAÇÃO REGISTRADA!\n\n" +
+        "Produto: " + resultado.produto + "\n" +
+        "SKU: " + resultado.sku + "\n" +
+        "Tipo: " + resultado.tipo + "\n" +
+        "Quantidade: " + resultado.quantidade + "\n\n" +
+        "Estoque atual: " + resultado.estoqueNovo,
+        false
       );
 
-      return;
+      document.getElementById("quantidade").value = "";
+      document.getElementById("tipo").value = "";
+      document.getElementById("observacao").value = "";
 
+      await consultarEstoque(resultado.sku);
+
+    } catch (erro) {
+      mostrarMensagem(
+        "Erro ao registrar movimentação:\n" +
+        (erro && erro.message ? erro.message : erro),
+        true
+      );
     }
-
-
-    mostrarMensagem(
-
-      'MOVIMENTAÇÃO REGISTRADA!\n\n' +
-
-      'Produto: ' +
-      resultado.produto +
-
-      '\nSKU: ' +
-      resultado.sku +
-
-      '\nTipo: ' +
-      resultado.tipo +
-
-      '\nQuantidade: ' +
-      resultado.quantidade +
-
-      '\n\nEstoque atual: ' +
-      resultado.estoqueNovo,
-
-      false
-
-    );
-
-
-    document.getElementById(
-      'quantidade'
-    ).value = '';
-
-
-    document.getElementById(
-      'tipo'
-    ).value = '';
-
-
-    document.getElementById(
-      'observacao'
-    ).value = '';
-
-
-    await consultarEstoque(
-      resultado.sku
-    );
-
-
-  } catch(error) {
-
-    mostrarMensagem(
-
-      'Erro ao registrar movimentação:\n' +
-      error.message,
-
-      true
-
-    );
-
   }
 
-}
+  function mostrarMensagem(texto, erro) {
+    const elemento = document.getElementById("mensagem");
+    if (!elemento) return;
 
+    elemento.style.display = "block";
+    elemento.innerText = texto;
+    elemento.setAttribute("data-erro", erro ? "true" : "false");
+  }
 
-/* ============================================================
-   MENSAGENS
-============================================================ */
+  function esconderMensagem() {
+    const elemento = document.getElementById("mensagem");
+    if (elemento) elemento.style.display = "none";
+  }
 
-function mostrarMensagem(
-  texto,
-  erro
-) {
-
-  const elemento =
-    document.getElementById(
-      'mensagem'
-    );
-
-
-  elemento.style.display =
-    'block';
-
-
-  elemento.innerText =
-    texto;
-
-
-  elemento.className =
-    'mensagem ' +
-    (erro
-      ? 'erro'
-      : 'sucesso');
-
-}
-
-
-function esconderMensagem() {
-
-  const elemento =
-    document.getElementById(
-      'mensagem'
-    );
-
-
-  elemento.style.display =
-    'none';
-
-}
-
-
-/* ============================================================
-   SEGURANÇA HTML
-============================================================ */
-
-function escaparHTML(valor) {
-
-  return String(
-    valor == null
-      ? ''
-      : valor
-  )
-
-  .replace(
-    /&/g,
-    '&amp;'
-  )
-
-  .replace(
-    /</g,
-    '&lt;'
-  )
-
-  .replace(
-    />/g,
-    '&gt;'
-  )
-
-  .replace(
-    /"/g,
-    '&quot;'
-  )
-
-  .replace(
-    /'/g,
-    '&#039;'
-  );
-
-}
-
+  function escaparHTML(valor) {
+    return String(valor == null ? "" : valor)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#039;");
+  }
 </script>
-
 </body>
-
 </html>
