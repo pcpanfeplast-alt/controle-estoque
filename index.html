@@ -443,6 +443,130 @@
       opacity: .82;
     }
 
+    .estoque-geral-resumo {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin-top: 16px;
+    }
+
+    .estoque-geral-card {
+      border-radius: 13px;
+      padding: 16px;
+      min-height: 100px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 14px;
+      text-align: center;
+      border: 1px solid #dfe9f0;
+      background: linear-gradient(135deg, #f4f8fb, #eef4f8);
+    }
+
+    .estoque-geral-card.repor {
+      background: linear-gradient(135deg, #fff4f4, #fde9ea);
+      border-color: #f0cdd0;
+      color: #a12d35;
+    }
+
+    .estoque-geral-card .numero {
+      display: block;
+      font-size: 34px;
+      line-height: 1;
+      font-weight: 800;
+      margin-top: 4px;
+    }
+
+    .estoque-geral-icon {
+      font-size: 31px;
+    }
+
+    .estoque-geral-table-wrap {
+      margin-top: 18px;
+      overflow-x: auto;
+      border: 1px solid #e0e8ef;
+      border-radius: 12px;
+    }
+
+    .estoque-geral-table {
+      width: 100%;
+      min-width: 720px;
+      border-collapse: collapse;
+      background: #fff;
+    }
+
+    .estoque-geral-table th {
+      padding: 12px 13px;
+      background: #f1f6fa;
+      color: #1b3850;
+      font-size: 12px;
+      text-align: left;
+      border-bottom: 1px solid #d7e2eb;
+      white-space: nowrap;
+    }
+
+    .estoque-geral-table td {
+      padding: 12px 13px;
+      border-bottom: 1px solid #edf2f6;
+      font-size: 13px;
+      vertical-align: middle;
+    }
+
+    .estoque-geral-table tbody tr:last-child td {
+      border-bottom: 0;
+    }
+
+    .estoque-geral-table tbody tr:hover {
+      background: #f8fbfd;
+    }
+
+    .estoque-geral-table .numero-col {
+      text-align: right;
+      white-space: nowrap;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .status-estoque {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 74px;
+      padding: 6px 9px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: .2px;
+    }
+
+    .status-estoque.ok {
+      background: #e5f7ee;
+      color: #067744;
+      border: 1px solid #c7ead8;
+    }
+
+    .status-estoque.repor {
+      background: #fff0f1;
+      color: #a12d35;
+      border: 1px solid #f1c9cd;
+    }
+
+    .estoque-geral-vazio {
+      padding: 24px 16px !important;
+      text-align: center;
+      color: var(--muted);
+    }
+
+    .estoque-geral-loading {
+      opacity: .65;
+      pointer-events: none;
+    }
+
+    @media (max-width: 760px) {
+      .estoque-geral-resumo {
+        grid-template-columns: 1fr;
+      }
+    }
+
     .hidden {
       display: none !important;
     }
@@ -558,11 +682,6 @@
             <div id="statusCamera" class="status-camera"></div>
           </div>
 
-          <div class="camera-status-box">
-            <div class="big">⌗</div>
-            <strong>Leitor pronto</strong>
-            <small>Use a câmera traseira para ler o código.</small>
-          </div>
         </div>
 
         <div id="reader"></div>
@@ -647,6 +766,85 @@
       </div>
     </section>
 
+    <!-- ESTOQUE GERAL -->
+    <section class="card">
+      <div class="section-head">
+        <div class="section-head-main">
+          <div class="section-icon">📦</div>
+          <strong>ESTOQUE GERAL</strong>
+        </div>
+        <span>Visão geral dos produtos em estoque</span>
+      </div>
+
+      <div class="card-body">
+        <div class="field">
+          <label for="filtroEstoqueGeral">Pesquisar produto ou SKU</label>
+          <input
+            type="text"
+            id="filtroEstoqueGeral"
+            placeholder="Digite o SKU ou nome do produto"
+            oninput="filtrarEstoqueGeral()"
+          >
+        </div>
+
+        <div class="estoque-geral-resumo">
+          <div class="estoque-geral-card">
+            <div class="estoque-geral-icon">📦</div>
+            <div>
+              <div class="stock-label">TOTAL DE PRODUTOS</div>
+              <strong id="totalProdutosEstoque" class="numero">-</strong>
+            </div>
+          </div>
+
+          <div class="estoque-geral-card repor">
+            <div class="estoque-geral-icon">⚠️</div>
+            <div>
+              <div class="stock-label">PRODUTOS PARA REPOR</div>
+              <strong id="produtosReporEstoque" class="numero">-</strong>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-actions">
+          <button
+            id="btnAtualizarEstoqueGeral"
+            class="btn btn-primary"
+            type="button"
+            onclick="carregarEstoqueGeral()"
+          >
+            🔄 &nbsp; ATUALIZAR ESTOQUE
+          </button>
+        </div>
+
+        <div id="mensagemEstoqueGeral" class="mensagem"></div>
+
+        <div class="estoque-geral-table-wrap">
+          <table class="estoque-geral-table">
+            <thead>
+              <tr>
+                <th>SKU</th>
+                <th>PRODUTO</th>
+                <th class="numero-col">ESTOQUE ATUAL</th>
+                <th class="numero-col">ESTOQUE MÍNIMO</th>
+                <th style="text-align:center;">STATUS</th>
+              </tr>
+            </thead>
+            <tbody id="tabelaEstoqueGeral">
+              <tr>
+                <td colspan="5" class="estoque-geral-vazio">
+                  Clique em "ATUALIZAR ESTOQUE" para consultar o estoque geral.
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="info-strip">
+          ℹ️ &nbsp; O estoque geral é consultado diretamente no Google Sheets e apresenta o saldo atualizado dos produtos ativos.
+        </div>
+      </div>
+    </section>
+
   </main>
 
   <footer class="footer">
@@ -658,7 +856,7 @@
       </div>
       <div class="footer-version">
         Controle de Estoque ES<br>
-        Versão 2.3
+        Versão 2.4
       </div>
     </div>
   </footer>
@@ -693,10 +891,12 @@
 
       let finalizado = false;
 
+      const tempoLimite = acao === "listarEstoqueGeralNovo" ? 90000 : 15000;
+
       const timeout = setTimeout(function() {
         finalizar();
         reject(new Error("Tempo limite excedido ao comunicar com o servidor."));
-      }, 15000);
+      }, tempoLimite);
 
       window[callbackName] = function(resultado) {
         finalizar();
@@ -1049,6 +1249,155 @@ async function fecharCamera(mostrarStatus = true) {
         true
       );
     }
+  }
+
+  let estoqueGeralDados = [];
+
+  /**
+   * Carrega o estoque geral usando a nova ação do Apps Script.
+   * Não interfere na consulta individual nem na câmera/QR Code.
+   */
+  async function carregarEstoqueGeral() {
+    const tabela = document.getElementById("tabelaEstoqueGeral");
+    const mensagem = document.getElementById("mensagemEstoqueGeral");
+    const botao = document.getElementById("btnAtualizarEstoqueGeral");
+
+    if (!tabela || !mensagem || !botao) return;
+
+    tabela.innerHTML =
+      '<tr><td colspan="5" class="estoque-geral-vazio">Consultando estoque geral...</td></tr>';
+
+    mensagem.style.display = "none";
+    botao.disabled = true;
+    botao.innerText = "⏳  CONSULTANDO ESTOQUE...";
+
+    try {
+      const resultado = await chamarAPI("listarEstoqueGeralNovo");
+
+      if (!resultado || !resultado.sucesso) {
+        throw new Error(
+          resultado && resultado.mensagem
+            ? resultado.mensagem
+            : "Não foi possível consultar o estoque geral."
+        );
+      }
+
+      estoqueGeralDados = Array.isArray(resultado.produtos)
+        ? resultado.produtos
+        : [];
+
+      const total = Number.isFinite(Number(resultado.totalProdutos))
+        ? Number(resultado.totalProdutos)
+        : estoqueGeralDados.length;
+
+      const abaixoMinimo = Number.isFinite(Number(resultado.abaixoMinimo))
+        ? Number(resultado.abaixoMinimo)
+        : estoqueGeralDados.filter(function(item) {
+            return String(item.status || "").toUpperCase() === "REPOR";
+          }).length;
+
+      document.getElementById("totalProdutosEstoque").innerText =
+        total.toLocaleString("pt-BR");
+
+      document.getElementById("produtosReporEstoque").innerText =
+        abaixoMinimo.toLocaleString("pt-BR");
+
+      renderizarEstoqueGeral();
+
+      if (!estoqueGeralDados.length) {
+        mostrarMensagemEstoqueGeral(
+          "Nenhum produto ativo foi encontrado no estoque.",
+          false
+        );
+      } else {
+        mensagem.style.display = "none";
+      }
+
+    } catch (erro) {
+      estoqueGeralDados = [];
+      tabela.innerHTML =
+        '<tr><td colspan="5" class="estoque-geral-vazio">Não foi possível carregar o estoque geral.</td></tr>';
+
+      mostrarMensagemEstoqueGeral(
+        "Erro ao consultar o estoque geral:\n" +
+        (erro && erro.message ? erro.message : erro),
+        true
+      );
+
+    } finally {
+      botao.disabled = false;
+      botao.innerText = "🔄  ATUALIZAR ESTOQUE";
+    }
+  }
+
+  /**
+   * Filtra os dados já carregados sem fazer nova chamada ao servidor.
+   */
+  function filtrarEstoqueGeral() {
+    renderizarEstoqueGeral();
+  }
+
+  /**
+   * Renderiza a tabela do estoque geral.
+   */
+  function renderizarEstoqueGeral() {
+    const tabela = document.getElementById("tabelaEstoqueGeral");
+    const filtroElemento = document.getElementById("filtroEstoqueGeral");
+
+    if (!tabela) return;
+
+    const filtro = filtroElemento
+      ? filtroElemento.value.trim().toLowerCase()
+      : "";
+
+    const dadosFiltrados = estoqueGeralDados.filter(function(item) {
+      const sku = String(item.sku == null ? "" : item.sku).toLowerCase();
+      const produto = String(item.produto == null ? "" : item.produto).toLowerCase();
+
+      return !filtro || sku.includes(filtro) || produto.includes(filtro);
+    });
+
+    if (!dadosFiltrados.length) {
+      tabela.innerHTML =
+        '<tr><td colspan="5" class="estoque-geral-vazio">Nenhum produto encontrado para a pesquisa.</td></tr>';
+      return;
+    }
+
+    tabela.innerHTML = dadosFiltrados.map(function(item) {
+      const sku = escaparHTML(item.sku);
+      const produto = escaparHTML(item.produto);
+      const estoque = Number(item.estoqueAtual == null ? 0 : item.estoqueAtual);
+      const minimo = Number(item.estoqueMinimo == null ? 0 : item.estoqueMinimo);
+      const status = String(item.status || "").toUpperCase() === "REPOR"
+        ? "REPOR"
+        : "OK";
+
+      const classeStatus = status === "REPOR" ? "repor" : "ok";
+      const iconeStatus = status === "REPOR" ? "⚠️" : "✓";
+
+      return (
+        "<tr>" +
+          "<td><strong>" + sku + "</strong></td>" +
+          "<td>" + produto + "</td>" +
+          '<td class="numero-col">' + estoque.toLocaleString("pt-BR") + "</td>" +
+          '<td class="numero-col">' + minimo.toLocaleString("pt-BR") + "</td>" +
+          '<td style="text-align:center;">' +
+            '<span class="status-estoque ' + classeStatus + '">' +
+              iconeStatus + " " + status +
+            "</span>" +
+          "</td>" +
+        "</tr>"
+      );
+    }).join("");
+  }
+
+  function mostrarMensagemEstoqueGeral(texto, erro) {
+    const elemento = document.getElementById("mensagemEstoqueGeral");
+    if (!elemento) return;
+
+    elemento.style.display = "block";
+    elemento.innerText = texto;
+    elemento.setAttribute("data-erro", erro ? "true" : "false");
   }
 
   function mostrarMensagem(texto, erro) {
