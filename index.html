@@ -1160,8 +1160,12 @@ async function fecharCamera(mostrarStatus = true) {
     }
   }
 
+  // Cache local das sugestões para evitar novas chamadas ao Apps Script
+  // quando o operador repete uma pesquisa já realizada.
+  const cacheSugestoesProduto = new Map();
+  const CACHE_SUGESTOES_TTL = 60000; // 60 segundos
   let timerSugestaoProduto = null;
-  let consultaSugestaoEmAndamento = false;
+  let sequenciaBuscaSugestao = 0;
 
   function ocultarSugestoesProduto() {
     const caixa = document.getElementById("sugestoesProduto");
@@ -1235,42 +1239,76 @@ async function fecharCamera(mostrarStatus = true) {
   function buscarSugestoesProduto() {
     const campo = document.getElementById("sku");
     const termo = campo ? campo.value.trim() : "";
+    const buscaAtual = ++sequenciaBuscaSugestao;
 
     clearTimeout(timerSugestaoProduto);
 
-    // Números puros continuam sendo tratados como SKU, sem disparar
-    // pesquisa de descrição enquanto o operador digita o código.
+    // Números puros continuam sendo tratados como SKU.
+    // Também evitamos chamadas para termos muito curtos.
     if (!termo || /^\d+$/.test(termo) || termo.length < 2) {
       ocultarSugestoesProduto();
       return;
     }
 
-    timerSugestaoProduto = setTimeout(async function() {
-      if (consultaSugestaoEmAndamento) return;
-      consultaSugestaoEmAndamento = true;
+    // Se o mesmo termo foi pesquisado recentemente, mostra imediatamente
+    // o resultado armazenado no navegador, sem nova chamada ao servidor.
+    const chaveCache = termo.toLocaleLowerCase('pt-BR');
+    const itemCache = cacheSugestoesProduto.get(chaveCache);
 
+    if (itemCache && (Date.now() - itemCache.timestamp) < CACHE_SUGESTOES_TTL) {
+      renderizarSugestoesProduto(itemCache.modelos);
+      return;
+    }
+
+    if (itemCache) {
+      cacheSugestoesProduto.delete(chaveCache);
+    }
+
+    // Pequeno debounce para não consultar o servidor a cada tecla.
+    // 120 ms deixa a busca mais responsiva que os 250 ms anteriores.
+    timerSugestaoProduto = setTimeout(async function() {
       try {
         const resultado = await chamarAPI("buscarProdutosDescricaoNovo", {
           termo: termo
         });
+
+        // Se o operador continuou digitando enquanto a requisição estava
+        // em andamento, simplesmente descartamos esta resposta antiga.
+        if (buscaAtual !== sequenciaBuscaSugestao) return;
+
+        const termoAtual = document.getElementById("sku").value.trim();
+        if (termoAtual !== termo) return;
 
         if (!resultado || !resultado.sucesso) {
           ocultarSugestoesProduto();
           return;
         }
 
-        // Evita mostrar resultados antigos se o operador continuou digitando.
-        const termoAtual = document.getElementById("sku").value.trim();
-        if (termoAtual !== termo) return;
+        const modelos = Array.isArray(resultado.modelos)
+          ? resultado.modelos
+          : [];
 
-        renderizarSugestoesProduto(resultado.modelos || []);
+        // Guarda o resultado exato por 60 segundos.
+        cacheSugestoesProduto.set(chaveCache, {
+          timestamp: Date.now(),
+          modelos: modelos
+        });
+
+        // Limita o cache para não crescer indefinidamente.
+        if (cacheSugestoesProduto.size > 30) {
+          const primeiraChave = cacheSugestoesProduto.keys().next().value;
+          cacheSugestoesProduto.delete(primeiraChave);
+        }
+
+        renderizarSugestoesProduto(modelos);
+
       } catch (erro) {
-        console.error("Erro na busca por descrição:", erro);
-        ocultarSugestoesProduto();
-      } finally {
-        consultaSugestaoEmAndamento = false;
+        if (buscaAtual === sequenciaBuscaSugestao) {
+          console.error("Erro na busca por descrição:", erro);
+          ocultarSugestoesProduto();
+        }
       }
-    }, 250);
+    }, 120);
   }
 
   /**
