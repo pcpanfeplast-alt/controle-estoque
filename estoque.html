@@ -704,7 +704,7 @@
         <div class="sku-row">
           <div>
             <label for="sku">SKU</label>
-            <input type="text" id="sku" placeholder="Digite ou leia o QR Code" onchange="buscarProduto()">
+            <input type="text" id="sku" placeholder="Digite ou leia o QR Code" onchange="buscarProduto()" onkeydown="if(event.key==='Enter'){event.preventDefault();buscarProduto();}">
           </div>
           <button class="btn btn-primary" type="button" onclick="buscarProduto()">🔎 &nbsp; CONSULTAR PRODUTO</button>
         </div>
