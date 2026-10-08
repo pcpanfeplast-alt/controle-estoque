@@ -704,10 +704,149 @@
 
       .footer-divider { display: none; }
     }
+    /* LOGIN / SEGURANÇA V3 */
+#acessoESOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: 99999;
+  background: rgba(238,243,247,.98);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 18px;
+}
+
+.acesso-es-card {
+  width: min(420px, 100%);
+  background: #fff;
+  border: 1px solid #dfe8ef;
+  border-radius: 16px;
+  box-shadow: 0 12px 35px rgba(15,52,78,.15);
+  padding: 26px;
+}
+
+.acesso-es-card h2 {
+  margin: 0;
+  color: #0b3f63;
+  text-align: center;
+}
+
+.acesso-es-card p {
+  text-align: center;
+  color: #64778a;
+  margin: 7px 0 20px;
+}
+
+.acesso-es-etapa {
+  display: block;
+}
+
+.acesso-es-etapa.oculta {
+  display: none;
+}
+
+.acesso-es-info {
+  background: #eef7ff;
+  border: 1px solid #d8ebfa;
+  color: #285677;
+  padding: 12px;
+  border-radius: 10px;
+  margin-bottom: 12px;
+  font-size: 13px;
+}
+
+.acesso-es-msg {
+  margin-top: 12px;
+  font-size: 13px;
+  white-space: pre-line;
+}
+
+.acesso-es-btn {
+  width: 100%;
+  min-height: 50px;
+  margin-top: 9px;
+  border: 0;
+  border-radius: 10px;
+  background: linear-gradient(135deg,#0b4f7c,#0b79bd);
+  color: #fff;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.acesso-es-btn-sec {
+  width: 100%;
+  min-height: 44px;
+  margin-top: 8px;
+  border: 0;
+  border-radius: 10px;
+  background: #edf2f6;
+  color: #29465e;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.acesso-es-help {
+  color: #64778a;
+  font-size: 12px;
+  margin-top: 7px;
+}
+
+.perfil-es {
+  font-size: 12px;
+  color: #64778a;
+  margin-top: 7px;
+}
+
+.btn-sair-es {
+  border: 0;
+  border-radius: 9px;
+  padding: 8px 12px;
+  background: #edf2f6;
+  color: #29465e;
+  font-weight: 700;
+  cursor: pointer;
+}
   </style>
 </head>
 
 <body>
+  <div id="acessoESOverlay">
+  <div class="acesso-es-card">
+    <h2>🔐 E.S ERP</h2>
+    <p>Controle de Estoque ES</p>
+
+    <div id="acessoEmailES" class="acesso-es-etapa">
+      <label for="emailAcessoES">E-mail autorizado</label>
+      <input type="email" id="emailAcessoES" placeholder="Digite seu e-mail" autocomplete="email">
+      <button type="button" class="acesso-es-btn" onclick="iniciarAcessoUIES()">CONTINUAR</button>
+    </div>
+
+    <div id="acessoSenhaES" class="acesso-es-etapa oculta">
+      <div class="acesso-es-info">Usuário localizado. Informe sua senha.</div>
+      <input type="password" id="senhaAcessoES" placeholder="Digite sua senha" autocomplete="current-password">
+      <button type="button" class="acesso-es-btn" onclick="autenticarSenhaUIES()">ENTRAR</button>
+      <button type="button" class="acesso-es-btn-sec" onclick="voltarEmailAcessoUIES()">VOLTAR</button>
+    </div>
+
+    <div id="acessoCodigoES" class="acesso-es-etapa oculta">
+      <div class="acesso-es-info">Primeiro acesso: um código de 6 dígitos será enviado para seu e-mail.</div>
+      <input type="text" id="codigoAcessoES" placeholder="Código de 6 dígitos" inputmode="numeric" maxlength="6" autocomplete="one-time-code">
+      <button type="button" class="acesso-es-btn" onclick="confirmarCodigoAcessoUIES()">CONFIRMAR CÓDIGO</button>
+      <button type="button" class="acesso-es-btn-sec" onclick="voltarEmailAcessoUIES()">VOLTAR</button>
+    </div>
+
+    <div id="acessoCriarSenhaES" class="acesso-es-etapa oculta">
+      <div class="acesso-es-info">Código confirmado. Agora crie sua senha individual.</div>
+      <input type="password" id="novaSenhaAcessoES" placeholder="Crie sua senha — mínimo 8 caracteres" autocomplete="new-password">
+      <input type="password" id="confirmarNovaSenhaAcessoES" placeholder="Confirme sua senha" autocomplete="new-password" style="margin-top:9px;">
+      <div class="acesso-es-help">A senha deve ter no mínimo 8 caracteres e não pode ser igual ao e-mail.</div>
+      <button type="button" class="acesso-es-btn" onclick="definirSenhaUIES()">CRIAR SENHA E ENTRAR</button>
+      <button type="button" class="acesso-es-btn-sec" onclick="voltarEmailAcessoUIES()">CANCELAR</button>
+    </div>
+
+    <div id="mensagemAcessoES" class="acesso-es-msg"></div>
+  </div>
+</div>
 <div class="app">
 
   <header class="topbar">
@@ -731,7 +870,11 @@
           <p>Consulta, leitura de QR Code e movimentação de produtos.</p>
         </div>
       </div>
-      <div class="system-pill">ANFEPLAST • SISTEMA INTERNO</div>
+     <div style="text-align:right;">
+  <div class="system-pill">ANFEPLAST • SISTEMA INTERNO</div>
+  <div class="perfil-es" id="perfilUsuarioES"></div>
+  <button type="button" class="btn-sair-es" onclick="encerrarSessaoES()">SAIR</button>
+</div>
     </section>
 
     <section class="card">
@@ -788,7 +931,7 @@
       </div>
     </section>
 
-    <section class="card">
+    <section class="card" id="cardMovimentacao">
       <div class="section-head">
         <div class="section-head-main">
           <div class="section-icon">⇄</div>
@@ -815,7 +958,7 @@
 
           <div class="field">
             <label for="operador">Operador</label>
-            <input type="text" id="operador" placeholder="Nome do operador">
+            <input type="text" id="operador" placeholder="Usuário autenticado" readonly>
           </div>
 
           <div class="field">
@@ -938,6 +1081,452 @@
   let produtoAtual = null;
   let scannerQR = null;
   let processandoQR = false;
+  // ==========================================================
+// AUTENTICAÇÃO E SESSÃO - E.S ERP
+// ==========================================================
+
+let usuarioAcessoES = null;
+let setupTokenAcessoES = '';
+
+function mostrarMensagemAcessoES(mensagem, erro) {
+  const el = document.getElementById('mensagemAcessoES');
+  if (!el) return;
+
+  el.textContent = mensagem || '';
+  el.style.color = erro ? '#b42318' : '#285677';
+}
+
+function mostrarEtapaAcessoES(id) {
+  const etapas = [
+    'acessoEmailES',
+    'acessoSenhaES',
+    'acessoCodigoES',
+    'acessoCriarSenhaES'
+  ];
+
+  etapas.forEach(function(etapa) {
+    const el = document.getElementById(etapa);
+    if (el) {
+      el.classList.toggle('oculta', etapa !== id);
+    }
+  });
+}
+
+function salvarSessaoES(resultado) {
+  sessionStorage.setItem('sessaoES_token', resultado.token || '');
+  sessionStorage.setItem('sessaoES_email', resultado.email || '');
+  sessionStorage.setItem('sessaoES_perfil', resultado.perfil || '');
+
+  usuarioAcessoES = {
+    email: resultado.email || '',
+    perfil: resultado.perfil || '',
+    token: resultado.token || ''
+  };
+}
+
+function limparSessaoES() {
+  sessionStorage.removeItem('sessaoES_token');
+  sessionStorage.removeItem('sessaoES_email');
+  sessionStorage.removeItem('sessaoES_perfil');
+
+  usuarioAcessoES = null;
+  setupTokenAcessoES = '';
+}
+
+function tratarSessaoES(resultado) {
+  if (
+    resultado &&
+    resultado.sucesso === false &&
+    /sessão|permissão|autorização/i.test(resultado.mensagem || '')
+  ) {
+    encerrarSessaoES(true);
+    return true;
+  }
+
+  return false;
+}
+
+async function iniciarAcessoUIES() {
+  const emailEl = document.getElementById('emailAcessoES');
+  const email = (emailEl ? emailEl.value : '').trim().toLowerCase();
+
+  if (!email) {
+    mostrarMensagemAcessoES('Informe seu e-mail.', true);
+    return;
+  }
+
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    mostrarMensagemAcessoES('Informe um e-mail válido.', true);
+    return;
+  }
+
+  mostrarMensagemAcessoES('Verificando acesso...', false);
+
+  try {
+    const resultado = await chamarAPI('iniciarAcessoES', {
+      email: email,
+      dispositivo: navigator.userAgent || ''
+    });
+
+    if (!resultado || !resultado.sucesso) {
+      mostrarMensagemAcessoES(
+        resultado ? resultado.mensagem : 'Não foi possível iniciar o acesso.',
+        true
+      );
+      return;
+    }
+
+    if (resultado.precisaSenha) {
+      mostrarEtapaAcessoES('acessoSenhaES');
+
+      const campo = document.getElementById('senhaAcessoES');
+      if (campo) campo.focus();
+
+      mostrarMensagemAcessoES('Informe sua senha.', false);
+      return;
+    }
+
+    if (resultado.precisaCodigo) {
+      mostrarEtapaAcessoES('acessoCodigoES');
+
+      const campo = document.getElementById('codigoAcessoES');
+      if (campo) campo.focus();
+
+      mostrarMensagemAcessoES(
+        'Código enviado para seu e-mail. Validade: 10 minutos.',
+        false
+      );
+    }
+
+  } catch (erro) {
+    mostrarMensagemAcessoES(
+      erro.message || String(erro),
+      true
+    );
+  }
+}
+
+async function confirmarCodigoAcessoUIES() {
+  const email = (
+    document.getElementById('emailAcessoES').value || ''
+  ).trim().toLowerCase();
+
+  const codigo = (
+    document.getElementById('codigoAcessoES').value || ''
+  ).trim();
+
+  if (!/^\d{6}$/.test(codigo)) {
+    mostrarMensagemAcessoES(
+      'Digite o código de 6 dígitos recebido por e-mail.',
+      true
+    );
+    return;
+  }
+
+  mostrarMensagemAcessoES('Validando código...', false);
+
+  try {
+    const resultado = await chamarAPI('confirmarCodigoAcessoES', {
+      email: email,
+      codigo: codigo,
+      dispositivo: navigator.userAgent || ''
+    });
+
+    if (!resultado || !resultado.sucesso) {
+      mostrarMensagemAcessoES(
+        resultado ? resultado.mensagem : 'Código inválido.',
+        true
+      );
+      return;
+    }
+
+    setupTokenAcessoES = resultado.setupToken || '';
+
+    if (!setupTokenAcessoES) {
+      mostrarMensagemAcessoES(
+        'Não foi possível liberar a criação da senha.',
+        true
+      );
+      return;
+    }
+
+    mostrarEtapaAcessoES('acessoCriarSenhaES');
+
+    const campo = document.getElementById('novaSenhaAcessoES');
+    if (campo) campo.focus();
+
+    mostrarMensagemAcessoES(
+      'Código confirmado. Agora crie sua senha.',
+      false
+    );
+
+  } catch (erro) {
+    mostrarMensagemAcessoES(
+      erro.message || String(erro),
+      true
+    );
+  }
+}
+
+async function definirSenhaUIES() {
+  const email = (
+    document.getElementById('emailAcessoES').value || ''
+  ).trim().toLowerCase();
+
+  const senha = document.getElementById('novaSenhaAcessoES').value;
+  const confirmar = document.getElementById('confirmarNovaSenhaAcessoES').value;
+
+  if (senha.length < 8) {
+    mostrarMensagemAcessoES(
+      'A senha deve ter no mínimo 8 caracteres.',
+      true
+    );
+    return;
+  }
+
+  if (senha !== confirmar) {
+    mostrarMensagemAcessoES(
+      'As senhas não conferem.',
+      true
+    );
+    return;
+  }
+
+  mostrarMensagemAcessoES('Criando sua senha...', false);
+
+  try {
+    const resultado = await chamarAPI('definirSenhaAcessoES', {
+      email: email,
+      setupToken: setupTokenAcessoES,
+      senha: senha,
+      confirmarSenha: confirmar,
+      dispositivo: navigator.userAgent || ''
+    });
+
+    if (!resultado || !resultado.sucesso) {
+      mostrarMensagemAcessoES(
+        resultado ? resultado.mensagem : 'Não foi possível criar a senha.',
+        true
+      );
+      return;
+    }
+
+    salvarSessaoES(resultado);
+    setupTokenAcessoES = '';
+
+    entrarNoSistemaES();
+
+  } catch (erro) {
+    mostrarMensagemAcessoES(
+      erro.message || String(erro),
+      true
+    );
+  }
+}
+
+async function autenticarSenhaUIES() {
+  const email = (
+    document.getElementById('emailAcessoES').value || ''
+  ).trim().toLowerCase();
+
+  const senha = document.getElementById('senhaAcessoES').value;
+
+  if (!senha) {
+    mostrarMensagemAcessoES('Informe sua senha.', true);
+    return;
+  }
+
+  mostrarMensagemAcessoES('Entrando no sistema...', false);
+
+  try {
+    const resultado = await chamarAPI('autenticarSenhaAcessoES', {
+      email: email,
+      senha: senha,
+      dispositivo: navigator.userAgent || ''
+    });
+
+    if (!resultado || !resultado.sucesso) {
+      mostrarMensagemAcessoES(
+        resultado ? resultado.mensagem : 'Senha incorreta.',
+        true
+      );
+      return;
+    }
+
+    if (resultado.precisaCriarSenha) {
+      mostrarMensagemAcessoES(
+        'Sua senha precisa ser configurada novamente. Volte e inicie o acesso para receber um novo código.',
+        true
+      );
+      return;
+    }
+
+    salvarSessaoES(resultado);
+    entrarNoSistemaES();
+
+  } catch (erro) {
+    mostrarMensagemAcessoES(
+      erro.message || String(erro),
+      true
+    );
+  }
+}
+
+function preencherOperadorES() {
+  const operador = document.getElementById('operador');
+  const perfil = document.getElementById('perfilUsuarioES');
+
+  if (operador && usuarioAcessoES) {
+    operador.value = usuarioAcessoES.email || '';
+  }
+
+  if (perfil && usuarioAcessoES) {
+    perfil.innerText =
+      (usuarioAcessoES.email || '') +
+      ' • ' +
+      (usuarioAcessoES.perfil || '');
+  }
+}
+
+function aplicarPermissoesES() {
+  if (!usuarioAcessoES) return;
+
+  const cardMovimentacao =
+    document.getElementById('cardMovimentacao');
+
+  if (cardMovimentacao) {
+    cardMovimentacao.style.display =
+      (
+        usuarioAcessoES.perfil === 'ADMIN MASTER' ||
+        usuarioAcessoES.perfil === 'MOVIMENTADOR'
+      )
+        ? ''
+        : 'none';
+  }
+
+  preencherOperadorES();
+}
+
+function entrarNoSistemaES() {
+  const overlay =
+    document.getElementById('acessoESOverlay');
+
+  if (overlay) {
+    overlay.style.display = 'none';
+  }
+
+  aplicarPermissoesES();
+}
+
+async function validarSessaoInicialES() {
+  const token =
+    sessionStorage.getItem('sessaoES_token') || '';
+
+  const email =
+    sessionStorage.getItem('sessaoES_email') || '';
+
+  const perfil =
+    sessionStorage.getItem('sessaoES_perfil') || '';
+
+  if (!token || !email || !perfil) {
+    mostrarEtapaAcessoES('acessoEmailES');
+    return;
+  }
+
+  try {
+    const resultado = await chamarAPI(
+      'validarSessaoAcessoES',
+      {
+        token: token,
+        permissao: 'CONSULTA'
+      }
+    );
+
+    if (!resultado || !resultado.sucesso) {
+      limparSessaoES();
+      mostrarEtapaAcessoES('acessoEmailES');
+      mostrarMensagemAcessoES(
+        'Sua sessão expirou. Faça login novamente.',
+        true
+      );
+      return;
+    }
+
+    usuarioAcessoES = {
+      email: resultado.email || email,
+      perfil: resultado.perfil || perfil,
+      token: token
+    };
+
+    entrarNoSistemaES();
+
+  } catch (erro) {
+    limparSessaoES();
+    mostrarEtapaAcessoES('acessoEmailES');
+    mostrarMensagemAcessoES(
+      'Não foi possível validar a sessão.',
+      true
+    );
+  }
+}
+
+async function encerrarSessaoES(silencioso) {
+  const token =
+    sessionStorage.getItem('sessaoES_token') || '';
+
+  try {
+    if (token) {
+      await chamarAPI('encerrarSessaoAcessoES', {
+        token: token,
+        dispositivo: navigator.userAgent || ''
+      });
+    }
+  } catch (erro) {
+    // Mesmo se a comunicação falhar, limpa a sessão local.
+  }
+
+  limparSessaoES();
+
+  const overlay =
+    document.getElementById('acessoESOverlay');
+
+  if (overlay) {
+    overlay.style.display = 'flex';
+  }
+
+  mostrarEtapaAcessoES('acessoEmailES');
+
+  const email =
+    document.getElementById('emailAcessoES');
+
+  const senha =
+    document.getElementById('senhaAcessoES');
+
+  if (email) email.value = '';
+  if (senha) senha.value = '';
+
+  if (!silencioso) {
+    mostrarMensagemAcessoES(
+      'Sessão encerrada.',
+      false
+    );
+  }
+}
+
+function voltarEmailAcessoUIES() {
+  setupTokenAcessoES = '';
+  mostrarEtapaAcessoES('acessoEmailES');
+  mostrarMensagemAcessoES('', false);
+}
+
+function inicializarAcessoES() {
+  validarSessaoInicialES();
+}
+
+document.addEventListener(
+  'DOMContentLoaded',
+  inicializarAcessoES
+);
 
   /**
    * Comunicação externa com o Apps Script via JSONP.
@@ -1326,7 +1915,10 @@ async function fecharCamera(mostrarStatus = true) {
     mostrarMensagem("Consultando produto...", false);
 
     try {
-      const resultado = await chamarAPI("buscarProduto", { sku: sku });
+      const resultado = await chamarAPI("buscarProduto", {
+    sku: sku,
+    token: usuarioAcessoES.token
+});
 
       if (!resultado || !resultado.sucesso) {
         produtoAtual = null;
@@ -1372,7 +1964,10 @@ async function fecharCamera(mostrarStatus = true) {
    */
   async function consultarEstoque(sku) {
     try {
-      const resultado = await chamarAPI("consultarEstoque", { sku: sku });
+      const resultado = await chamarAPI("consultarEstoque", {
+    sku: sku,
+    token: usuarioAcessoES.token
+});
 
       if (!resultado || !resultado.sucesso) {
         document.getElementById("estoque").innerHTML =
@@ -1431,13 +2026,14 @@ async function fecharCamera(mostrarStatus = true) {
 
     try {
       const resultado = await chamarAPI("registrarMovimentacao", {
-        sku: produtoAtual.sku,
-        tipo: tipo,
-        quantidade: quantidade,
-        operador: operador,
-        dispositivo: dispositivo,
-        observacao: observacao
-      });
+    sku: produtoAtual.sku,
+    tipo: tipo,
+    quantidade: quantidade,
+    operador: operador,
+    dispositivo: dispositivo,
+    observacao: observacao,
+    token: usuarioAcessoES.token
+});
 
       if (!resultado || !resultado.sucesso) {
         mostrarMensagem(
