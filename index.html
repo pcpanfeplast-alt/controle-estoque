@@ -1,3 +1,4 @@
+```
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -6,7 +7,120 @@
   <meta name="theme-color" content="#0b4f7c">
   <meta name="description" content="Controle de Estoque ES - Anfeplast">
   <title>Controle de Estoque ES | Anfeplast</title>
-  <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+  <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js">
+
+/* MÓDULO DE DEPÓSITOS — usa a sessão/API existentes; leitor QR preservado */
+function tokenSessaoDepositosES() {
+  return sessionStorage.getItem('sessaoES_token') || (usuarioAcessoES && usuarioAcessoES.token) || '';
+}
+function mensagemDepositosUIES(texto, erro) {
+  const el = document.getElementById('mensagemDepositosES');
+  if (!el) return;
+  el.textContent = texto || '';
+  el.className = 'depositos-mensagem ' + (erro ? 'erro' : 'ok');
+}
+function usarSKUConsultadoDepositoES() {
+  const campoPrincipal = document.getElementById('sku');
+  const skuPrincipal = campoPrincipal ? campoPrincipal.value.trim() : '';
+  const sku = (produtoAtual && produtoAtual.sku) ? String(produtoAtual.sku) : skuPrincipal;
+  if (!sku) {
+    mensagemDepositosUIES('Primeiro informe ou leia um SKU e consulte o produto na área acima.', true);
+    return;
+  }
+  document.getElementById('depositoSKU').value = sku;
+  consultarSaldosUIES();
+}
+async function consultarSaldosUIES() {
+  const token = tokenSessaoDepositosES();
+  const sku = document.getElementById('depositoSKU').value.trim();
+  if (!token) { mensagemDepositosUIES('Sua sessão expirou. Faça login novamente.', true); return; }
+  if (!sku) { mensagemDepositosUIES('Informe o SKU ou use o SKU consultado acima.', true); return; }
+  mensagemDepositosUIES('Consultando saldos por depósito...', false);
+  try {
+    const r = await chamarAPI('consultarSaldosDepositoES', {token:token, sku:sku});
+    if (!r || !r.sucesso) {
+      if (typeof tratarSessaoES === 'function' && tratarSessaoES(r)) return;
+      mensagemDepositosUIES(r && r.mensagem ? r.mensagem : 'Não foi possível consultar os saldos.', true); return;
+    }
+    document.getElementById('depositoProdutoNome').textContent = 'SKU: ' + r.sku + ' | Produto: ' + r.produto + ' | Total distribuído nos depósitos: ' + Number(r.total || 0).toLocaleString('pt-BR') + ' unidades';
+    const mapa = {};
+    (r.saldos || []).forEach(function(x) { mapa[String(x.local || '').toUpperCase()] = Number(x.saldo) || 0; });
+    const locais = ['ESTOQUE','PRODUÇÃO','EXPEDIÇÃO','HOTSTAMPING'];
+    document.getElementById('depositosSaldosResumo').innerHTML = locais.map(function(local) {
+      return '<div class="deposito-saldo"><span>' + local + '</span><strong>' + (mapa[local] || 0).toLocaleString('pt-BR') + '</strong></div>';
+    }).join('');
+    mensagemDepositosUIES('Saldos consultados. Total nos depósitos: ' + Number(r.total || 0).toLocaleString('pt-BR') + ' unidades.', false);
+  } catch (e) {
+    mensagemDepositosUIES('Erro ao consultar depósitos: ' + (e && e.message ? e.message : e), true);
+  }
+}
+async function registrarTransferenciaDepositoUIES() {
+  const token = tokenSessaoDepositosES();
+  const sku = document.getElementById('depositoSKU').value.trim();
+  const origem = document.getElementById('depositoOrigem').value;
+  const destino = document.getElementById('depositoDestino').value;
+  const quantidade = Number(document.getElementById('depositoQuantidade').value);
+  const observacao = document.getElementById('depositoObservacao').value.trim();
+  const idReferencia = document.getElementById('depositoReferencia').value.trim();
+  const operador = (usuarioAcessoES && usuarioAcessoES.email) || document.getElementById('operador').value.trim();
+  const dispositivo = navigator.userAgent || '';
+  if (!token) { mensagemDepositosUIES('Sua sessão expirou. Faça login novamente.', true); return; }
+  if (!sku) { mensagemDepositosUIES('Informe um SKU válido.', true); return; }
+  if (!origem || !destino) { mensagemDepositosUIES('Selecione o depósito de origem e o de destino.', true); return; }
+  if (origem === destino) { mensagemDepositosUIES('Origem e destino precisam ser diferentes.', true); return; }
+  if (!Number.isInteger(quantidade) || quantidade <= 0) { mensagemDepositosUIES('Informe uma quantidade inteira maior que zero.', true); return; }
+  const resumo = 'Transferir ' + quantidade.toLocaleString('pt-BR') + ' unidades do SKU ' + sku + '\nDe: ' + origem + '\nPara: ' + destino + '\n\nEssa operação altera os saldos dos depósitos, mas não o total da empresa.';
+  if (!window.confirm(resumo + '\n\nConfirma a transferência?')) return;
+  const botao = document.getElementById('btnTransferirDepositoES');
+  if (botao) { botao.disabled = true; botao.textContent = 'Processando transferência...'; }
+  mensagemDepositosUIES('Registrando transferência. Não feche esta página...', false);
+  try {
+    const r = await chamarAPI('transferirEntreDepositosES', {
+      token:token, sku:sku, origem:origem, destino:destino,
+      quantidade:quantidade, operador:operador, dispositivo:dispositivo,
+      observacao:observacao, idReferencia:idReferencia
+    });
+    if (!r || !r.sucesso) {
+      if (typeof tratarSessaoES === 'function' && tratarSessaoES(r)) return;
+      mensagemDepositosUIES(r && r.mensagem ? r.mensagem : 'A transferência não foi concluída.', true); return;
+    }
+    mensagemDepositosUIES('TRANSFERÊNCIA REGISTRADA\nID: ' + r.idMovimento + '\nSKU: ' + r.sku + ' — ' + r.produto + '\nQuantidade: ' + Number(r.quantidade).toLocaleString('pt-BR') + '\n' + r.origem + ': ' + Number(r.saldoOrigemAntes).toLocaleString('pt-BR') + ' → ' + Number(r.saldoOrigemDepois).toLocaleString('pt-BR') + '\n' + r.destino + ': ' + Number(r.saldoDestinoAntes).toLocaleString('pt-BR') + ' → ' + Number(r.saldoDestinoDepois).toLocaleString('pt-BR') + '\nTotal da empresa após transferência: ' + Number(r.totalEmpresaDepois).toLocaleString('pt-BR'), false);
+    document.getElementById('depositoQuantidade').value = '';
+    document.getElementById('depositoObservacao').value = '';
+    await consultarSaldosUIES();
+    await carregarHistoricoDepositosUIES();
+  } catch (e) {
+    mensagemDepositosUIES('Erro ao registrar transferência: ' + (e && e.message ? e.message : e), true);
+  } finally {
+    if (botao) { botao.disabled = false; botao.textContent = 'Confirmar transferência'; }
+  }
+}
+async function carregarHistoricoDepositosUIES() {
+  const token = tokenSessaoDepositosES();
+  if (!token) { mensagemDepositosUIES('Sua sessão expirou. Faça login novamente.', true); return; }
+  const sku = document.getElementById('depositoSKU').value.trim();
+  const body = document.getElementById('historicoDepositosBody');
+  if (body) body.innerHTML = '<tr><td colspan="8">Carregando histórico...</td></tr>';
+  try {
+    const r = await chamarAPI('listarMovimentacoesDepositosES', {token:token, sku:sku, limite:100});
+    if (!r || !r.sucesso) {
+      if (body) body.innerHTML = '<tr><td colspan="8">' + escaparHTML((r && r.mensagem) || 'Não foi possível carregar o histórico.') + '</td></tr>';
+      if (typeof tratarSessaoES === 'function') tratarSessaoES(r);
+      return;
+    }
+    const itens = r.movimentacoes || [];
+    if (!itens.length) { body.innerHTML = '<tr><td colspan="8">Nenhuma transferência encontrada para este filtro.</td></tr>'; return; }
+    body.innerHTML = itens.map(function(x) {
+      let data = x.dataHora || '';
+      try { if (data && typeof data === 'string' && !isNaN(Date.parse(data))) data = new Date(data).toLocaleString('pt-BR'); else if (data instanceof Date) data = data.toLocaleString('pt-BR'); } catch (_) {}
+      return '<tr><td>' + escaparHTML(String(data)) + '</td><td>' + escaparHTML(String(x.sku || '')) + '</td><td>' + escaparHTML(String(x.produto || '')) + '</td><td>' + escaparHTML(String(x.origem || '')) + '</td><td>' + escaparHTML(String(x.destino || '')) + '</td><td>' + Number(x.quantidade || 0).toLocaleString('pt-BR') + '</td><td>' + escaparHTML(String(x.operador || '')) + '</td><td>' + escaparHTML(String(x.idReferencia || x.observacao || '')) + '</td></tr>';
+    }).join('');
+  } catch (e) {
+    if (body) body.innerHTML = '<tr><td colspan="8">Erro: ' + escaparHTML(e && e.message ? e.message : String(e)) + '</td></tr>';
+  }
+}
+
+</script>
 
   <style>
     :root {
@@ -806,7 +920,41 @@
   font-weight: 700;
   cursor: pointer;
 }
-  </style>
+  
+
+/* NAVEGAÇÃO POR MÓDULOS — organização visual, sem alterar a lógica operacional */
+    main.main > section[data-modulo] { display: none; }
+    .painel-modulos { margin: 18px 0 24px; }
+    .painel-modulos-intro { color:#5e7283; margin:0 0 16px; }
+    .modulos-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:16px; }
+    .modulo-acesso { min-height:128px; padding:20px; border:1px solid #d7e5ef; border-radius:14px; background:#fff; box-shadow:0 5px 16px rgba(15,52,78,.07); text-align:left; cursor:pointer; color:#123f5d; transition:transform .15s, box-shadow .15s; }
+    .modulo-acesso:hover { transform:translateY(-2px); box-shadow:0 9px 22px rgba(15,52,78,.12); }
+    .modulo-acesso .modulo-icone { display:block; font-size:28px; margin-bottom:10px; }
+    .modulo-acesso strong { display:block; font-size:15px; margin-bottom:6px; }
+    .modulo-acesso small { display:block; color:#63798a; line-height:1.4; font-size:12px; }
+    .modulo-topo { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:14px; }
+    .btn-voltar-modulos { border:1px solid #d4e1ea; background:#f3f7fa; color:#194b6c; border-radius:9px; padding:9px 13px; font-weight:700; cursor:pointer; }
+    .deposito-area-consulta, .deposito-area-transferencia { display:block; }
+    .deposito-modo-consulta .deposito-area-transferencia { display:none; }
+    .deposito-modo-transferencia .deposito-area-consulta { display:none; }
+    @media(max-width:600px){ .modulos-grid { grid-template-columns:1fr; } .modulo-acesso { min-height:unset; } }
+
+/* MÓDULO DE DEPÓSITOS — adição isolada; não altera o leitor QR */
+.depositos-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:16px; }
+.depositos-resumo { display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:10px; margin:14px 0; }
+.deposito-saldo { background:#f2f7fb; border:1px solid #dbe7ef; border-radius:10px; padding:14px; }
+.deposito-saldo strong { display:block; color:#0b5b88; font-size:22px; margin-top:5px; }
+.depositos-tabela-wrap { overflow-x:auto; margin-top:14px; }
+.depositos-tabela { width:100%; border-collapse:collapse; font-size:13px; }
+.depositos-tabela th,.depositos-tabela td { padding:10px; border-bottom:1px solid #e2eaf0; text-align:left; white-space:nowrap; }
+.depositos-tabela th { background:#eef5fa; color:#24465e; }
+.depositos-mensagem { margin-top:12px; padding:12px; border-radius:9px; white-space:pre-line; display:none; }
+.depositos-mensagem.ok { display:block; color:#075c3b; background:#e5f6ee; border:1px solid #bde8d2; }
+.depositos-mensagem.erro { display:block; color:#8a1f1f; background:#fff0f0; border:1px solid #f0caca; }
+.depositos-acoes { display:flex; flex-wrap:wrap; gap:10px; margin-top:14px; }
+@media(max-width:600px){ .depositos-tabela { font-size:12px; } .depositos-tabela th,.depositos-tabela td { padding:8px; } }
+
+</style>
 </head>
 
 <body>
@@ -877,7 +1025,28 @@
 </div>
     </section>
 
-    <section class="card">
+    <!-- PAINEL INICIAL DE ACESSO AOS MÓDULOS -->
+    <section id="painelModulosES" class="card painel-modulos">
+      <div class="section-head">
+        <div class="section-head-main"><div class="section-icon">▦</div><strong>PAINEL DE MÓDULOS</strong></div>
+        <span>Selecione a etapa que deseja acessar</span>
+      </div>
+      <div class="card-body">
+        <p class="painel-modulos-intro">Cada processo abre em uma tela própria. Use “Painel de módulos” para voltar sem perder a organização do sistema.</p>
+        <div class="modulos-grid">
+          <button type="button" class="modulo-acesso" onclick="abrirModuloES('qr')"><span class="modulo-icone">📷</span><strong>Leitura de QR Code</strong><small>Ler a etiqueta e identificar rapidamente o produto.</small></button>
+          <button type="button" class="modulo-acesso" onclick="abrirModuloES('consulta')"><span class="modulo-icone">🔎</span><strong>Consulta de produto e saldo</strong><small>Consultar SKU, descrição e estoque atual.</small></button>
+          <button type="button" class="modulo-acesso acesso-movimentacao-es" onclick="abrirModuloES('movimentacao')"><span class="modulo-icone">↕️</span><strong>Entrada e saída</strong><small>Registrar movimentações do estoque geral.</small></button>
+          <button type="button" class="modulo-acesso acesso-depositos-es" onclick="abrirModuloDepositosES('consulta')"><span class="modulo-icone">🏬</span><strong>Consulta de saldo por depósito</strong><small>Ver o saldo separado por ESTOQUE, PRODUÇÃO, EXPEDIÇÃO e HOTSTAMPING.</small></button>
+          <button type="button" class="modulo-acesso acesso-depositos-es" onclick="abrirModuloDepositosES('transferencia')"><span class="modulo-icone">⇄</span><strong>Transferência entre depósitos</strong><small>Transferir quantidades entre locais com rastreabilidade.</small></button>
+          <button type="button" class="modulo-acesso" onclick="abrirModuloES('estoque')"><span class="modulo-icone">📦</span><strong>Estoque geral</strong><small>Consultar a relação de produtos e itens para reposição.</small></button>
+          <button type="button" class="modulo-acesso acesso-etiquetas-es" onclick="abrirModuloES('etiquetas')"><span class="modulo-icone">🏷️</span><strong>Impressão de etiquetas</strong><small>Acesso reservado ao ADMIN MASTER e ao MOVIMENTADOR. Módulo a estruturar.</small></button>
+        </div>
+      </div>
+    </section>
+
+    <section class="card" data-modulo="qr">
+      <div class="modulo-topo"><button type="button" class="btn-voltar-modulos" onclick="voltarPainelModulosES()">← Painel de módulos</button></div>
       <div class="section-head">
         <div class="section-head-main">
           <div class="section-icon">▣</div>
@@ -900,7 +1069,8 @@
       </div>
     </section>
 
-    <section class="card">
+    <section class="card" data-modulo="consulta">
+      <div class="modulo-topo"><button type="button" class="btn-voltar-modulos" onclick="voltarPainelModulosES()">← Painel de módulos</button></div>
       <div class="section-head">
         <div class="section-head-main">
           <div class="section-icon">▤</div>
@@ -931,7 +1101,8 @@
       </div>
     </section>
 
-    <section class="card" id="cardMovimentacao">
+    <section class="card" id="cardMovimentacao" data-modulo="movimentacao">
+      <div class="modulo-topo"><button type="button" class="btn-voltar-modulos" onclick="voltarPainelModulosES()">← Painel de módulos</button></div>
       <div class="section-head">
         <div class="section-head-main">
           <div class="section-icon">⇄</div>
@@ -979,8 +1150,106 @@
       </div>
     </section>
 
+
+
+    <!-- MÓDULO DE DEPÓSITOS: transferências internas sem alterar o estoque total -->
+    <section class="card" id="cardDepositosES" data-modulo="depositos">
+      <div class="modulo-topo"><button type="button" class="btn-voltar-modulos" onclick="voltarPainelModulosES()">← Painel de módulos</button></div>
+      <div class="section-head">
+        <div class="section-head-main">
+          <div class="section-icon">⇄</div>
+          <strong>TRANSFERÊNCIA ENTRE DEPÓSITOS</strong>
+        </div>
+        <span>Movimentação interna com rastreabilidade</span>
+      </div>
+      <div class="card-body">
+        <div class="info-strip">A transferência muda o saldo entre locais, mas não reduz o estoque total da empresa. Para usar um produto lido pela câmera, consulte o SKU acima e clique em “Usar SKU consultado”.</div>
+        <div class="depositos-grid" style="margin-top:14px;">
+          <div class="field">
+            <label for="depositoSKU">SKU do produto</label>
+            <input id="depositoSKU" type="text" inputmode="text" placeholder="Digite o SKU">
+          </div>
+          <div class="field" style="align-self:end;">
+            <button class="btn btn-secondary" type="button" onclick="usarSKUConsultadoDepositoES()">Usar SKU consultado</button>
+          </div>
+        </div>
+        <div id="depositoProdutoNome" class="product-box" style="margin-top:10px;">Nenhum produto consultado neste módulo.</div>
+        <div class="deposito-area-consulta">
+        <div class="depositos-resumo" id="depositosSaldosResumo">
+          <div class="deposito-saldo"><span>ESTOQUE</span><strong>—</strong></div>
+          <div class="deposito-saldo"><span>PRODUÇÃO</span><strong>—</strong></div>
+          <div class="deposito-saldo"><span>EXPEDIÇÃO</span><strong>—</strong></div>
+          <div class="deposito-saldo"><span>HOTSTAMPING</span><strong>—</strong></div>
+        </div>
+        <div class="depositos-acoes">
+          <button class="btn btn-primary" type="button" onclick="consultarSaldosUIES()">Consultar saldos por depósito</button>
+        </div>
+        </div>
+        <div class="deposito-area-transferencia">
+        <div class="field-grid" style="margin-top:18px;">
+          <div class="field">
+            <label for="depositoOrigem">Depósito de origem</label>
+            <select id="depositoOrigem">
+              <option value="">Selecione a origem</option>
+              <option value="ESTOQUE">ESTOQUE</option>
+              <option value="PRODUÇÃO">PRODUÇÃO</option>
+              <option value="EXPEDIÇÃO">EXPEDIÇÃO</option>
+              <option value="HOTSTAMPING">HOTSTAMPING</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="depositoDestino">Depósito de destino</label>
+            <select id="depositoDestino">
+              <option value="">Selecione o destino</option>
+              <option value="ESTOQUE">ESTOQUE</option>
+              <option value="PRODUÇÃO">PRODUÇÃO</option>
+              <option value="EXPEDIÇÃO">EXPEDIÇÃO</option>
+              <option value="HOTSTAMPING">HOTSTAMPING</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="depositoQuantidade">Quantidade em unidades</label>
+            <input id="depositoQuantidade" type="number" min="1" step="1" placeholder="Digite a quantidade">
+          </div>
+          <div class="field">
+            <label for="depositoReferencia">Referência (opcional)</label>
+            <input id="depositoReferencia" type="text" placeholder="Pedido, OP ou referência interna">
+          </div>
+          <div class="field" style="grid-column:1/-1;">
+            <label for="depositoObservacao">Observação (opcional)</label>
+            <input id="depositoObservacao" type="text" placeholder="Motivo ou detalhe da transferência">
+          </div>
+        </div>
+        <div class="depositos-acoes">
+          <button id="btnTransferirDepositoES" class="btn btn-register" type="button" onclick="registrarTransferenciaDepositoUIES()">Confirmar transferência</button>
+        </div>
+        <div id="mensagemDepositosES" class="depositos-mensagem" role="status" aria-live="polite"></div>
+        <h3 style="margin-top:24px;color:#174a6b;">Histórico de transferências</h3>
+        <div class="depositos-tabela-wrap">
+          <table class="depositos-tabela">
+            <thead><tr><th>Data/hora</th><th>SKU</th><th>Produto</th><th>Origem</th><th>Destino</th><th>Quantidade</th><th>Operador</th><th>Referência</th></tr></thead>
+            <tbody id="historicoDepositosBody"><tr><td colspan="8">Clique em “Atualizar histórico” para consultar.</td></tr></tbody>
+          </table>
+        </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- MÓDULO DE IMPRESSÃO DE ETIQUETAS — acesso reservado; estruturação posterior -->
+    <section class="card" data-modulo="etiquetas">
+      <div class="modulo-topo"><button type="button" class="btn-voltar-modulos" onclick="voltarPainelModulosES()">← Painel de módulos</button></div>
+      <div class="section-head">
+        <div class="section-head-main"><div class="section-icon">🏷️</div><strong>IMPRESSÃO DE ETIQUETAS</strong></div>
+        <span>Módulo reservado para ADMIN MASTER e MOVIMENTADOR</span>
+      </div>
+      <div class="card-body">
+        <div class="deposito-nota" role="status">O acesso ao módulo foi criado. A configuração de modelos, QR Code, dados da etiqueta e impressão será estruturada na próxima etapa. Nenhuma rotina de impressão foi alterada ou ativada.</div>
+      </div>
+    </section>
+
     <!-- ESTOQUE GERAL -->
-    <section class="card">
+    <section class="card" data-modulo="estoque">
+      <div class="modulo-topo"><button type="button" class="btn-voltar-modulos" onclick="voltarPainelModulosES()">← Painel de módulos</button></div>
       <div class="section-head">
         <div class="section-head-main">
           <div class="section-icon">📦</div>
@@ -1388,6 +1657,47 @@ function preencherOperadorES() {
   }
 }
 
+function abrirModuloES(nome) {
+  const permitidos = ['qr', 'consulta', 'movimentacao', 'depositos', 'estoque', 'etiquetas'];
+  if (!permitidos.includes(nome)) return;
+  const painel = document.getElementById('painelModulosES');
+  if (painel) painel.style.display = 'none';
+  document.querySelectorAll('main.main > section[data-modulo]').forEach(function(secao) {
+    secao.style.display = secao.getAttribute('data-modulo') === nome ? 'block' : 'none';
+  });
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function voltarPainelModulosES() {
+  document.querySelectorAll('main.main > section[data-modulo]').forEach(function(secao) {
+    secao.style.display = 'none';
+  });
+  const painel = document.getElementById('painelModulosES');
+  if (painel) painel.style.display = 'block';
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function abrirModuloDepositosES(modo) {
+  abrirModuloES('depositos');
+  const card = document.getElementById('cardDepositosES');
+  if (!card) return;
+  card.classList.toggle('deposito-modo-consulta', modo === 'consulta');
+  card.classList.toggle('deposito-modo-transferencia', modo === 'transferencia');
+  const titulo = card.querySelector('.section-head strong');
+  const subtitulo = card.querySelector('.section-head span');
+  if (titulo) titulo.textContent = modo === 'consulta' ? 'CONSULTA DE SALDO POR DEPÓSITO' : 'TRANSFERÊNCIA ENTRE DEPÓSITOS';
+  if (subtitulo) subtitulo.textContent = modo === 'consulta' ? 'Consulte o saldo de cada local' : 'Movimentação interna com rastreabilidade';
+  const form = card.querySelector('.deposito-area-transferencia');
+  if (form) form.style.display = modo === 'consulta' ? 'none' : 'block';
+  const consulta = card.querySelector('.deposito-area-consulta');
+  if (consulta) consulta.style.display = 'block';
+  const nomeProduto = document.getElementById('depositoProdutoNome');
+  if (nomeProduto && modo === 'consulta') {
+    // O painel de consulta mantém os campos de SKU e os saldos, sem exibir os campos de transferência.
+  }
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
 function aplicarPermissoesES() {
   if (!usuarioAcessoES) return;
 
@@ -1404,7 +1714,27 @@ function aplicarPermissoesES() {
         : 'none';
   }
 
+  const cardDepositos = document.getElementById('cardDepositosES');
+  if (cardDepositos) {
+    cardDepositos.style.display =
+      (usuarioAcessoES.perfil === 'ADMIN MASTER' || usuarioAcessoES.perfil === 'MOVIMENTADOR') ? '' : 'none';
+  }
+
+  const podeMovimentar = usuarioAcessoES.perfil === 'ADMIN MASTER' || usuarioAcessoES.perfil === 'MOVIMENTADOR';
+  document.querySelectorAll('.acesso-movimentacao-es, .acesso-depositos-es').forEach(function(botao) {
+    botao.style.display = podeMovimentar ? '' : 'none';
+  });
+
+  // Impressão de etiquetas: acesso visual restrito ao ADMIN MASTER e MOVIMENTADOR.
+  const podeImprimirEtiquetas = podeMovimentar;
+  document.querySelectorAll('.acesso-etiquetas-es').forEach(function(botao) {
+    botao.style.display = podeImprimirEtiquetas ? '' : 'none';
+  });
+  const moduloEtiquetas = document.querySelector('main.main > section[data-modulo="etiquetas"]');
+  if (moduloEtiquetas && !podeImprimirEtiquetas) moduloEtiquetas.style.display = 'none';
+
   preencherOperadorES();
+  voltarPainelModulosES();
 }
 
 function entrarNoSistemaES() {
@@ -2242,3 +2572,4 @@ async function fecharCamera(mostrarStatus = true) {
 </script>
 </body>
 </html>
+```
